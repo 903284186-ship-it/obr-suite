@@ -35,7 +35,7 @@ async function readRoomCards(): Promise<any[] | null> {
 
 async function writeRoomCards(cards: any[] | null): Promise<void> {
   try {
-    await OBR.room.setMetadata({ [ROOM_CARDS_KEY]: cards ?? undefined });
+    await OBR.room.setMetadata({ [ROOM_CARDS_KEY]: cards ?? [] });
   } catch (e) {
     console.warn("[obr-suite/cross-scene-cards] room write failed", e);
   }

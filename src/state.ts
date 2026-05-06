@@ -326,8 +326,11 @@ export async function setState(partial: Partial<SuiteState>): Promise<void> {
     if (next.crossSceneSyncSettings) {
       await OBR.room.setMetadata({ [ROOM_STATE_KEY]: next });
     } else if (prev.crossSceneSyncSettings) {
-      // Was on, now off — clear so scene-loads stop seeing it.
-      await OBR.room.setMetadata({ [ROOM_STATE_KEY]: undefined });
+      // Was on, now off — write explicit false so other scenes
+      // stop hydrating. Using {crossSceneSyncSettings:false} instead
+      // of undefined because OBR's metadata processing pipeline
+      // calls Object.entries() on every value.
+      await OBR.room.setMetadata({ [ROOM_STATE_KEY]: { crossSceneSyncSettings: false } });
     }
   } catch (e) {
     console.warn("[obr-suite/state] room mirror write failed", e);

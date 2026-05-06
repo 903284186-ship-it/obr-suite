@@ -183,12 +183,13 @@ export async function importPackFromBlob(
   // metadata might depend on suite state already being set).
   if (opts.applyRoomMetadata && manifest.roomMetadata) {
     try {
-      // OBR.room.setMetadata accepts a partial — undefined values
-      // delete keys. In replace mode we wipe foreign keys too.
+      // OBR.room.setMetadata is a merge, not a full replace —
+      // keys not in the manifest survive. Avoid undefined values
+      // as OBR's metadata processing calls Object.entries() on
+      // every value.
       if (opts.mode === "replace") {
         const cur = await OBR.room.getMetadata();
         const delta: Record<string, unknown> = {};
-        for (const k of Object.keys(cur)) delta[k] = undefined;
         for (const [k, v] of Object.entries(manifest.roomMetadata)) {
           delta[k] = v;
         }
@@ -221,12 +222,11 @@ export async function importPackFromBlob(
     } catch (e) {
       console.warn("[worldPack/import] failed to clear existing items", e);
     }
-    // Wipe scene metadata + apply manifest's. setMetadata with
-    // `undefined` value deletes the key.
+    // Wipe scene metadata + apply manifest's. OBR.scene.setMetadata
+    // is a merge — keys not in the manifest survive. Avoid undefined
+    // values (OBR calls Object.entries on every value).
     try {
-      const cur = await OBR.scene.getMetadata();
       const wipeDelta: Record<string, unknown> = {};
-      for (const k of Object.keys(cur)) wipeDelta[k] = undefined;
       for (const [k, v] of Object.entries(manifest.sceneMetadata)) {
         wipeDelta[k] = v;
       }
