@@ -308,6 +308,13 @@ async function loadIndex(): Promise<IndexFile> {
         const key = `${cn}|${n}|${src}|${e.c ?? ""}`;
         if (seen.has(key)) continue;
         seen.add(key);
+        // Normalise s to the resolved source-code string so the
+        // global sourceById map (built from merged.m.s) isn't
+        // needed later. Different libraries may assign different
+        // numeric ids to the same source code; resolving here
+        // against the entry's own library prevents cross-library
+        // id collisions.
+        e.s = src;
         merged.x.push(e);
       }
     }
