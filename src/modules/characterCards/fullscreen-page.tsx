@@ -817,7 +817,7 @@ function App() {
         try {
           const url = `${API_ORIGIN}/api/character/${encodeURIComponent(roomId)}/${encodeURIComponent(cardId)}/data`;
           const res = await fetch(url, {
-            method: "POST",
+            method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(parsed),
           });
