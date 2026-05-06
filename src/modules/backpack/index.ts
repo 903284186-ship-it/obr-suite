@@ -25,6 +25,7 @@ export async function writeBackpack(cardId: string, data: BackpackData): Promise
 }
 
 export async function addItem(cardId: string, entry: BackpackEntry): Promise<BackpackData> {
+  if (entry.qty <= 0) return readBackpack(cardId);
   const bp = await readBackpack(cardId);
   const existing = bp.items.find((i) => i.srdName === entry.srdName);
   if (existing) {
@@ -40,6 +41,7 @@ export async function removeItem(cardId: string, srdName: string, qty?: number):
   const bp = await readBackpack(cardId);
   const idx = bp.items.findIndex((i) => i.srdName === srdName);
   if (idx === -1) return bp;
+  if (qty != null && qty <= 0) return bp;
   if (qty == null || bp.items[idx].qty <= qty) {
     bp.items.splice(idx, 1);
   } else {
