@@ -132,7 +132,7 @@ function classesStr(d: any): string {
 let currentCardId: string | null = null;
 const cardCache = new Map<string, any>();
 
-let currentBackpack: BackpackData = { items: [] };
+let currentBackpack: BackpackData = [];
 let backpackExpanded = true;
 let showTransferList = false;
 let transferItemName: string | null = null;
@@ -194,7 +194,7 @@ async function readLiveBubbles(): Promise<BubblesData> {
 }
 
 function renderBackpackHTML(): string {
-  const n = currentBackpack.items.reduce((sum, i) => sum + i.qty, 0);
+  const n = currentBackpack.reduce((sum, i) => sum + i.qty, 0);
   const toggleIcon = backpackExpanded ? "▼" : "▶";
 
   let body = "";
@@ -208,14 +208,14 @@ function renderBackpackHTML(): string {
       ${opts}
       <div class="bp-transfer-cancel" id="bp-transfer-cancel">取消</div>
     </div>`;
-  } else if (backpackExpanded && currentBackpack.items.length > 0) {
-    const chips = currentBackpack.items.map((entry, i) => {
+  } else if (backpackExpanded && currentBackpack.length > 0) {
+    const chips = currentBackpack.map((entry, i) => {
       const cls = itemTypeToCssClass(entry.type);
       const label = entry.qty > 1 ? `${escapeHtml(entry.name)} ×${entry.qty}` : escapeHtml(entry.name);
       return `<span class="bp-chip ${cls}" data-idx="${i}" title="${escapeHtml(entry.name)}">${label}</span>`;
     }).join("");
     body = `<div class="bp-grid">${chips}</div>`;
-  } else if (backpackExpanded && currentBackpack.items.length === 0) {
+  } else if (backpackExpanded && currentBackpack.length === 0) {
     body = `<div class="empty" style="padding:2px 6px;font-size:10px;">空</div>`;
   }
 
@@ -689,7 +689,7 @@ function bindBackpackInteractions(): void {
     const idx = parseInt(chip.dataset.idx ?? "", 10);
     if (isNaN(idx)) return;
     const onClick = async () => {
-      const item = currentBackpack.items[idx];
+      const item = currentBackpack[idx];
       if (!item) return;
       try {
         OBR.broadcast.sendMessage(
@@ -701,7 +701,7 @@ function bindBackpackInteractions(): void {
     };
     const onCtx = async (e: Event) => {
       e.preventDefault();
-      const item = currentBackpack.items[idx];
+      const item = currentBackpack[idx];
       if (!item || !currentCardId) return;
       if (!(await canManageBackpack(currentCardId))) return;
       showContextMenu(e as MouseEvent, item.srdName, item.name, item.qty, idx);
@@ -753,7 +753,7 @@ async function doRerender(): Promise<void> {
 
 async function doRemoveItem(idx: number): Promise<void> {
   if (!currentCardId) return;
-  const item = currentBackpack.items[idx];
+  const item = currentBackpack[idx];
   if (!item) return;
   currentBackpack = await removeItem(currentCardId, item.srdName);
   doRerender();
@@ -761,13 +761,13 @@ async function doRemoveItem(idx: number): Promise<void> {
 
 async function doUpdateItemQty(idx: number, qty: number): Promise<void> {
   if (!currentCardId) return;
-  const item = currentBackpack.items[idx];
+  const item = currentBackpack[idx];
   if (!item) return;
   if (qty <= 0) {
     currentBackpack = await removeItem(currentCardId, item.srdName);
   } else {
     const bp = await readBackpack(currentCardId);
-    const target = bp.items.find((i) => i.srdName === item.srdName);
+    const target = bp.find((i) => i.srdName === item.srdName);
     if (target) target.qty = qty;
     await writeBackpack(currentCardId, bp);
     currentBackpack = bp;

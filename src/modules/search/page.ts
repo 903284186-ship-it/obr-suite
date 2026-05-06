@@ -967,7 +967,7 @@ function chipsFor(entry: Entry, data: DataEntry | null): string {
     add("距离", rangeStr(data.range));
     add("成分", componentsStr(data.components));
     add("持续", durationStr(data.duration));
-  } else if (c === 4 || c === 56 || c === 57) {
+  } else if (c === 4 || c === 31 || c === 47 || c === 56 || c === 57) {
     add("类型", String(data.type ?? data.weaponCategory ?? data.armorCategory ?? ""));
     if (data.weight != null) add("重量", `${data.weight} 磅`);
     if (data.value != null) add("价值", `${data.value} cp`);
@@ -1497,7 +1497,7 @@ async function renderPreviewFor(entry: Entry) {
   await loadBooks();
   const srcDisplay = sourceLabel(code);
 
-  const itemCategories = new Set([4, 56, 57]);
+  const itemCategories = new Set([4, 31, 47, 56, 57]);
   const backpackBtn = itemCategories.has(entry.c)
     ? `<button class="bp-add-btn" id="bp-add-btn" data-name="${escapeHtml(entry.n)}" data-display="${escapeHtml(display)}">＋ 加入背包</button>`
     : "";
@@ -1532,7 +1532,7 @@ async function renderPreviewFor(entry: Entry) {
     bodyEl.innerHTML = renderMonster(entry, data);
   } else if (c === 2) {
     bodyEl.innerHTML = chipsFor(entry, data) + renderSpell(entry, data);
-  } else if (c === 4 || c === 56 || c === 57) {
+  } else if (c === 4 || c === 31 || c === 47 || c === 56 || c === 57) {
     bodyEl.innerHTML = chipsFor(entry, data) + renderItem(entry, data);
   } else if (c === 13) {
     bodyEl.innerHTML = chipsFor(entry, data) + renderAdventure(entry, data);

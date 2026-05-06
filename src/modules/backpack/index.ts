@@ -9,16 +9,15 @@ export async function readBackpack(cardId: string): Promise<BackpackData> {
   try {
     const meta = await OBR.room.getMetadata();
     const raw = meta[backpackKey(cardId)];
-    if (raw && typeof raw === "object" && Array.isArray((raw as any).items)) {
-      return raw as BackpackData;
-    }
+    if (Array.isArray(raw)) return raw as BackpackData;
   } catch {}
-  return { items: [] };
+  return [];
 }
 
 export async function writeBackpack(cardId: string, data: BackpackData): Promise<void> {
   try {
-    await OBR.room.setMetadata({ [backpackKey(cardId)]: data });
+    const key = backpackKey(cardId);
+    await OBR.room.setMetadata({ [key]: data.length > 0 ? data : undefined });
   } catch (e) {
     console.warn("[backpack] writeBackpack failed", e);
   }
@@ -27,11 +26,11 @@ export async function writeBackpack(cardId: string, data: BackpackData): Promise
 export async function addItem(cardId: string, entry: BackpackEntry): Promise<BackpackData> {
   if (entry.qty <= 0) return readBackpack(cardId);
   const bp = await readBackpack(cardId);
-  const existing = bp.items.find((i) => i.srdName === entry.srdName);
+  const existing = bp.find((i) => i.srdName === entry.srdName);
   if (existing) {
     existing.qty += entry.qty;
   } else {
-    bp.items.push(entry);
+    bp.push(entry);
   }
   await writeBackpack(cardId, bp);
   return bp;
@@ -39,13 +38,13 @@ export async function addItem(cardId: string, entry: BackpackEntry): Promise<Bac
 
 export async function removeItem(cardId: string, srdName: string, qty?: number): Promise<BackpackData> {
   const bp = await readBackpack(cardId);
-  const idx = bp.items.findIndex((i) => i.srdName === srdName);
+  const idx = bp.findIndex((i) => i.srdName === srdName);
   if (idx === -1) return bp;
   if (qty != null && qty <= 0) return bp;
-  if (qty == null || bp.items[idx].qty <= qty) {
-    bp.items.splice(idx, 1);
+  if (qty == null || bp[idx].qty <= qty) {
+    bp.splice(idx, 1);
   } else {
-    bp.items[idx].qty -= qty;
+    bp[idx].qty -= qty;
   }
   await writeBackpack(cardId, bp);
   return bp;
@@ -61,22 +60,22 @@ export async function transferItem(
     readBackpack(fromCardId),
     readBackpack(toCardId),
   ]);
-  const srcIdx = fromBp.items.findIndex((i) => i.srdName === srdName);
+  const srcIdx = fromBp.findIndex((i) => i.srdName === srdName);
   if (srcIdx === -1) return { from: fromBp, to: toBp };
-  const srcItem = fromBp.items[srcIdx];
+  const srcItem = fromBp[srcIdx];
   const transferQty = qty == null || srcItem.qty <= qty ? srcItem.qty : qty;
 
   if (srcItem.qty <= transferQty) {
-    fromBp.items.splice(srcIdx, 1);
+    fromBp.splice(srcIdx, 1);
   } else {
     srcItem.qty -= transferQty;
   }
 
-  const dstItem = toBp.items.find((i) => i.srdName === srdName);
+  const dstItem = toBp.find((i) => i.srdName === srdName);
   if (dstItem) {
     dstItem.qty += transferQty;
   } else {
-    toBp.items.push({ ...srcItem, qty: transferQty });
+    toBp.push({ ...srcItem, qty: transferQty });
   }
 
   await Promise.all([
