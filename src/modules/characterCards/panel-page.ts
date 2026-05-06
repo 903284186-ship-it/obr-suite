@@ -20,7 +20,7 @@ const BC_CARD_UPDATED = "com.obr-suite/cc-card-updated";
 // fade-in/out transition). Modal is fullScreen — no need for setWidth /
 // setHeight, the iframe always covers the viewport.
 const PANEL_MODAL_ID = "com.obr-suite/cc-panel";
-const API_BASE = "https://obr.dnd.center/api/character";
+const API_BASE = "https://wild-art-cac6.903284186.workers.dev/api/character";
 const SCENE_META_KEY = "com.character-cards/list";
 const LS_PREFIX = "character-cards/";
 

@@ -31,6 +31,7 @@ import { subscribeToSfx } from "../dice/sfx-broadcast";
 // third-party widget.
 
 const SERVER_ORIGIN = "https://obr.dnd.center";
+const API_ORIGIN = "https://wild-art-cac6.903284186.workers.dev";
 
 // ===== Types ================================================
 interface CharacterData {
@@ -812,12 +813,11 @@ function App() {
 
         // Persist to server so other clients pick it up on their
         // next fetch / refresh. Falls back to local-only preview
-        // when the PUT endpoint isn't available (e.g. older server
-        // build that doesn't have /data PUT yet).
+        // when the endpoint isn't available.
         try {
-          const url = `${SERVER_ORIGIN}/api/character/${encodeURIComponent(roomId)}/${encodeURIComponent(cardId)}/data`;
+          const url = `${API_ORIGIN}/api/character/${encodeURIComponent(roomId)}/${encodeURIComponent(cardId)}/data`;
           const res = await fetch(url, {
-            method: "PUT",
+            method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(parsed),
           });
