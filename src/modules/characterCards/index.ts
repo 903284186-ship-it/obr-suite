@@ -10,6 +10,8 @@ import {
   BC_PANEL_RESET,
   type DragEndPayload,
 } from "../../utils/panelLayout";
+import { addItem, BC_BACKPACK_ADD_ITEM } from "../backpack/index";
+import type { BackpackEntry } from "../backpack/types";
 
 // Character-card info popover bbox — RIGHT/BOTTOM anchor. Always
 // returns the expected bbox so the layout editor can render a
@@ -255,6 +257,18 @@ async function handleSelection(selection: string[] | undefined) {
 }
 
 export async function setupCharacterCards(): Promise<void> {
+  // Handle backpack item additions from search page. This listener runs
+  // in the background iframe so items are always persisted even when the
+  // cc-info popover is closed.
+  unsubs.push(
+    OBR.broadcast.onMessage(BC_BACKPACK_ADD_ITEM, async (ev: any) => {
+      const data = ev?.data as { cardId?: string; srdName?: string; name?: string; type?: string } | undefined;
+      if (!data?.cardId || !data?.srdName || !data?.name) return;
+      const entry: BackpackEntry = { srdName: data.srdName, name: data.name, type: data.type ?? "", qty: 1 };
+      await addItem(data.cardId, entry);
+    })
+  );
+
   // The main panel opens/closes on broadcast from the cluster button or
   // from the Shift keyboard shortcut registered below.
   unsubs.push(

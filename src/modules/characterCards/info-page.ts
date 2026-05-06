@@ -15,14 +15,13 @@ import {
 import {
   readBackpack,
   writeBackpack,
-  addItem,
   removeItem,
   transferItem,
   canManageBackpack,
   BC_BACKPACK_ADD_ITEM,
   itemTypeToCssClass,
 } from "../backpack/index";
-import type { BackpackData, BackpackEntry } from "../backpack/types";
+import type { BackpackData } from "../backpack/types";
 
 const SHOW_MSG = "com.character-cards/info-show";
 
@@ -1247,8 +1246,6 @@ OBR.onReady(async () => {
   OBR.broadcast.onMessage(BC_BACKPACK_ADD_ITEM, async (ev: any) => {
     const data = ev?.data as { cardId?: string; srdName?: string; name?: string; type?: string } | undefined;
     if (!data?.cardId || !data?.srdName || !data?.name) return;
-    const entry: BackpackEntry = { srdName: data.srdName, name: data.name, type: data.type ?? "", qty: 1 };
-    await addItem(data.cardId, entry);
     if (data.cardId === currentCardId) {
       currentBackpack = await readBackpack(currentCardId);
       doRerender();
