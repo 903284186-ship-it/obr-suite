@@ -829,8 +829,8 @@ async function findEntryData(entry: Entry): Promise<DataEntry | null> {
     const parentName = (cp.ENG_name || cp.name || "")?.toLowerCase();
     if (parentName) {
       const parent = arr.find((e) => (e.ENG_name || e.name || "").toLowerCase() === parentName);
-      if (parent?.entries) {
-        return { ...found, entries: parent.entries, _copyResolvedFrom: parent.ENG_name || parent.name };
+      if (parent) {
+        return { ...parent, ...found, _copyResolvedFrom: parent.ENG_name || parent.name };
       }
     }
   }
