@@ -100,3 +100,17 @@ export async function canManageBackpack(cardId: string): Promise<boolean> {
     return false;
   }
 }
+
+export const BC_BACKPACK_OPEN_ADD = "com.obr-suite/backpack-open-add";
+export const BC_BACKPACK_ADD_ITEM = "com.obr-suite/backpack-add-item";
+
+export function itemTypeToCssClass(type: string): string {
+  const t = type.toLowerCase();
+  if (t.includes("potion") || t.includes("poison")) return "cat-potion";
+  if (t.includes("scroll") || t.includes("wondrous") || t.includes("rod")
+    || t.includes("wand") || t.includes("ring")) return "cat-scroll";
+  if (t.includes("tool") || t.includes("gear") || t.includes("kit")
+    || t.includes("ammunition")) return "cat-gear";
+  if (t.includes("weapon") || t.includes("armor") || t.includes("shield")) return "cat-weapon";
+  return "cat-other";
+}

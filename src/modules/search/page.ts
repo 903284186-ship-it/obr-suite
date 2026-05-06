@@ -1363,6 +1363,7 @@ let isGM = false;
 let currentHits: Entry[] = [];
 let kbdActiveIdx = -1;
 let pinnedEntry: Entry | null = null;
+let activeBackpackCardId: string | null = null;
 let lastHoverEntry: Entry | null = null;
 let collapsedKeepingQuery = false;
 // External callers (e.g. character-card name chips) can request that
@@ -1497,11 +1498,18 @@ async function renderPreviewFor(entry: Entry) {
   await loadBooks();
   const srcDisplay = sourceLabel(code);
 
+  const itemCategories = new Set([4, 56, 57]);
+  const showBackpackBtn = itemCategories.has(entry.c) && activeBackpackCardId;
+  const backpackBtn = showBackpackBtn
+    ? `<button class="bp-add-btn" id="bp-add-btn" data-name="${escapeHtml(entry.n)}" data-display="${escapeHtml(display)}">＋ 加入背包</button>`
+    : "";
+
   previewEl.innerHTML = `
     <div class="prev-head">
       <div class="prev-title">${escapeHtml(display)}</div>
       ${entry.n && entry.n !== display ? `<div class="prev-eng">${escapeHtml(entry.n)}</div>` : ""}
       <div class="prev-meta">${escapeHtml(cat.label)} · ${escapeHtml(srcDisplay)}${escapeHtml(page)}</div>
+      ${backpackBtn}
     </div>
     <div class="prev-body" id="prev-body"><div class="prev-loading">加载中…</div></div>
   `;
@@ -1589,6 +1597,40 @@ function refilter() {
 
 // Delegated click for any 5etools rollable tag inside the search preview.
 previewEl.addEventListener("click", async (e) => {
+  const bpBtn = (e.target as HTMLElement | null)?.closest<HTMLElement>(".bp-add-btn");
+  if (bpBtn && activeBackpackCardId) {
+    e.preventDefault();
+    e.stopPropagation();
+    const srdName = bpBtn.dataset.name ?? "";
+    const name = bpBtn.dataset.display ?? srdName;
+    if (!srdName) return;
+    // Fetch item type for chip coloring
+    let type = "";
+    try {
+      const res = await fetch(`${dataBase(getLocalLang())}/data/items.json`, { cache: "force-cache" });
+      if (res.ok) {
+        const data = await res.json();
+        const arr = Array.isArray(data) ? data : (data.item ?? []);
+        const found = arr.find((it: any) => it.name === srdName);
+        if (found?.type) type = String(found.type);
+      }
+    } catch {}
+    try {
+      OBR.broadcast.sendMessage(
+        "com.obr-suite/backpack-add-item",
+        { cardId: activeBackpackCardId, srdName, name, type },
+        { destination: "LOCAL" },
+      );
+    } catch {}
+    bpBtn.textContent = "✓ 已添加";
+    (bpBtn as HTMLButtonElement).disabled = true;
+    setTimeout(() => {
+      bpBtn.textContent = "＋ 加入背包";
+      (bpBtn as HTMLButtonElement).disabled = false;
+    }, 1500);
+    return;
+  }
+
   const target = (e.target as HTMLElement | null)?.closest<HTMLElement>(".rollable");
   if (!target) return;
   e.preventDefault();
@@ -1632,6 +1674,11 @@ OBR.onReady(() => {
     indexCache = null;
     dataCache.clear();
     dataPending.clear();
+  });
+  // Backpack: store the active cardId when the info panel's + button is clicked.
+  OBR.broadcast.onMessage("com.obr-suite/backpack-open-add", (event) => {
+    const data = (event.data as { cardId?: string } | undefined) ?? {};
+    activeBackpackCardId = typeof data.cardId === "string" ? data.cardId : null;
   });
 });
 

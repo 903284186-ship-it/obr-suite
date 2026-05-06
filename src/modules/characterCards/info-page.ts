@@ -19,14 +19,11 @@ import {
   removeItem,
   transferItem,
   canManageBackpack,
+  BC_BACKPACK_OPEN_ADD,
+  BC_BACKPACK_ADD_ITEM,
+  itemTypeToCssClass,
 } from "../backpack/index";
 import type { BackpackData, BackpackEntry } from "../backpack/types";
-import {
-  getItemIndex,
-  searchItems,
-  itemTypeToCssClass,
-} from "../backpack/itemSearch";
-import { getState } from "../../state";
 
 const SHOW_MSG = "com.character-cards/info-show";
 
@@ -138,7 +135,6 @@ const cardCache = new Map<string, any>();
 
 let currentBackpack: BackpackData = { items: [] };
 let backpackExpanded = true;
-let showItemSearch = false;
 let showTransferList = false;
 let transferItemName: string | null = null;
 let transferCandidates: Array<{ cardId: string; tokenId: string; name: string }> = [];
@@ -203,12 +199,7 @@ function renderBackpackHTML(): string {
   const toggleIcon = backpackExpanded ? "▼" : "▶";
 
   let body = "";
-  if (showItemSearch) {
-    body = `<div class="bp-search">
-      <input class="bp-search-input" id="bp-search-input" type="text" placeholder="搜索 SRD 装备...">
-      <div class="bp-results" id="bp-results"></div>
-    </div>`;
-  } else if (showTransferList && transferItemName) {
+  if (showTransferList && transferItemName) {
     const opts = transferCandidates.length > 0
       ? transferCandidates.map((c) =>
           `<div class="bp-transfer-opt" data-card="${escapeHtml(c.cardId)}">${escapeHtml(c.name)}</div>`
@@ -684,8 +675,6 @@ function bindBackpackInteractions(): void {
 
   const head = document.getElementById("bp-head");
   const addBtn = document.getElementById("bp-add");
-  const searchInput = document.getElementById("bp-search-input") as HTMLInputElement | null;
-  const resultsEl = document.getElementById("bp-results");
   const transferList = document.getElementById("bp-transfer-list");
   const transferCancel = document.getElementById("bp-transfer-cancel");
 
@@ -694,7 +683,6 @@ function bindBackpackInteractions(): void {
       const target = e.target as HTMLElement;
       if (target.closest("#bp-add")) return;
       backpackExpanded = !backpackExpanded;
-      showItemSearch = false;
       showTransferList = false;
       if (currentCardId) doRerender();
     };
@@ -703,73 +691,19 @@ function bindBackpackInteractions(): void {
   }
 
   if (addBtn) {
-    const onAddClick = async (e: Event) => {
+    const onAddClick = (e: Event) => {
       e.stopPropagation();
-      showItemSearch = !showItemSearch;
-      showTransferList = false;
-      if (currentCardId) {
-        doRerender();
-        if (showItemSearch) {
-          requestAnimationFrame(() => {
-            document.getElementById("bp-search-input")?.focus();
-          });
-        }
-      }
+      if (!currentCardId) return;
+      try {
+        OBR.broadcast.sendMessage(
+          BC_BACKPACK_OPEN_ADD,
+          { cardId: currentCardId },
+          { destination: "LOCAL" },
+        );
+      } catch {}
     };
     addBtn.addEventListener("click", onAddClick);
     cleanups.push(() => addBtn.removeEventListener("click", onAddClick));
-  }
-
-  if (searchInput) {
-    let timer: ReturnType<typeof setTimeout>;
-    const onSearchInput = () => {
-      clearTimeout(timer);
-      timer = setTimeout(async () => {
-        const q = searchInput.value.trim();
-        if (!q) { if (resultsEl) resultsEl.innerHTML = ""; return; }
-        const idx = await getItemIndex();
-        const results = searchItems(idx, q, 15);
-        if (resultsEl) {
-          resultsEl.innerHTML = results.map((r) =>
-            `<div class="bp-result" data-name="${escapeHtml(r.name)}">
-              <span>${escapeHtml(r.name)}</span>
-              <span class="bp-r-type">物品</span>
-            </div>`
-          ).join("");
-        }
-      }, 150);
-    };
-    searchInput.addEventListener("input", onSearchInput);
-    cleanups.push(() => {
-      clearTimeout(timer);
-      searchInput.removeEventListener("input", onSearchInput);
-    });
-  }
-
-  if (resultsEl) {
-    const onResultClick = async (e: Event) => {
-      const el = (e.target as HTMLElement).closest<HTMLElement>(".bp-result");
-      if (!el || !currentCardId) return;
-      const name = el.dataset.name;
-      if (!name) return;
-      const entry: BackpackEntry = { srdName: name, name, type: "", qty: 1 };
-      try {
-        const libs = getState().libraries || [];
-        const base = libs.length > 0 ? libs[0].baseUrl : "https://5e.kiwee.top";
-        const res = await fetch(`${base}/data/items.json`, { cache: "force-cache" });
-        if (res.ok) {
-          const data = await res.json();
-          const arr = Array.isArray(data) ? data : (data.item ?? []);
-          const found = arr.find((it: any) => it.name === name);
-          if (found?.type) entry.type = String(found.type);
-        }
-      } catch {}
-      currentBackpack = await addItem(currentCardId, entry);
-      showItemSearch = false;
-      doRerender();
-    };
-    resultsEl.addEventListener("click", onResultClick);
-    cleanups.push(() => resultsEl.removeEventListener("click", onResultClick));
   }
 
   document.querySelectorAll<HTMLElement>(".bp-chip").forEach((chip) => {
@@ -1112,10 +1046,18 @@ OBR.onReady(async () => {
     if (typeof p.itemId === "string") boundItemId = p.itemId;
     else if (p.itemId === null) boundItemId = null;
     if (p.cardId && p.roomId) {
-      showItemSearch = false;
       showTransferList = false;
       transferItemName = null;
       showCard(String(p.cardId), String(p.roomId));
     }
+  });
+
+  OBR.broadcast.onMessage(BC_BACKPACK_ADD_ITEM, async (ev: any) => {
+    const data = ev?.data as { cardId?: string; srdName?: string; name?: string; type?: string } | undefined;
+    if (!data?.cardId || !data?.srdName || !data?.name) return;
+    if (data.cardId !== currentCardId) return;
+    const entry: BackpackEntry = { srdName: data.srdName, name: data.name, type: data.type ?? "", qty: 1 };
+    currentBackpack = await addItem(data.cardId, entry);
+    doRerender();
   });
 });
