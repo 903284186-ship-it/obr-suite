@@ -78,10 +78,8 @@ export async function transferItem(
     toBp.push({ ...srcItem, qty: transferQty });
   }
 
-  await Promise.all([
-    writeBackpack(fromCardId, fromBp),
-    writeBackpack(toCardId, toBp),
-  ]);
+  await writeBackpack(fromCardId, fromBp);
+  await writeBackpack(toCardId, toBp);
   return { from: fromBp, to: toBp };
 }
 
