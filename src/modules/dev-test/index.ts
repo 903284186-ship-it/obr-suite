@@ -122,6 +122,7 @@ async function openAt(corner: Corner): Promise<void> {
   // to close + open.
   try { await OBR.popover.close(POPOVER_ID); } catch {}
   await OBR.popover.open({
+      anchorReference: "POSITION",
     id: POPOVER_ID,
     url: PANEL_URL,
     width: PANEL_W,

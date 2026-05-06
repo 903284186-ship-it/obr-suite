@@ -1,0 +1,16 @@
+{
+  "name": "Full Suite (Local)",
+  "version": "1.0.70-local",
+  "manifest_version": 1,
+  "author": "FullPeople",
+  "description": "本地测试版。",
+  "icon": "/exe_icon.png",
+  "background_url": "/background.html",
+  "action": {
+    "title": "骰子 / Dice (Local)",
+    "icon": "/d20.png",
+    "popover": "/dice-panel.html",
+    "width": 380,
+    "height": 620
+  }
+}

@@ -185,6 +185,7 @@ async function openPopover(): Promise<void> {
   try {
     const vw = await OBR.viewport.getWidth();
     await OBR.popover.open({
+      anchorReference: "POSITION",
       id: POPOVER_ID,
       url: POPOVER_URL,
       width: POPOVER_WIDTH,

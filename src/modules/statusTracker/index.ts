@@ -109,6 +109,7 @@ async function openPalette(): Promise<void> {
   const anchor = await paletteAnchor();
   try {
     await OBR.popover.open({
+      anchorReference: "POSITION",
       id: POPOVER_PALETTE,
       url: assetUrl("status-tracker.html"),
       width: PALETTE_W,
@@ -212,6 +213,7 @@ async function openManagePopover(tokenId: string): Promise<void> {
       try { await OBR.popover.close(POPOVER_MANAGE); } catch {}
     }
     await OBR.popover.open({
+      anchorReference: "POSITION",
       id: POPOVER_MANAGE,
       url,
       width: MANAGE_POPOVER_W,

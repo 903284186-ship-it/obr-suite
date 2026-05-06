@@ -122,6 +122,7 @@ async function openItemInspector(itemId: string): Promise<void> {
   const url = `${POPOVER_URL}?mode=item&id=${encodeURIComponent(itemId)}`;
   try {
     await OBR.popover.open({
+      anchorReference: "POSITION",
       id: POPOVER_ITEM_ID,
       url,
       width: ITEM_W,
@@ -159,6 +160,7 @@ async function openMetaInspector(mode: MetaMode): Promise<void> {
   const url = `${POPOVER_URL}?mode=${mode}`;
   try {
     await OBR.popover.open({
+      anchorReference: "POSITION",
       id: POPOVER_META_ID,
       url,
       width: META_W,

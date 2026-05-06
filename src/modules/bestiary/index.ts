@@ -153,6 +153,7 @@ async function openPanel() {
     const w = sizeOverride?.width ?? POPOVER_WIDTH;
     const h = sizeOverride?.height ?? POPOVER_HEIGHT;
     await OBR.popover.open({
+      anchorReference: "POSITION",
       id: POPOVER_ID,
       url: POPOVER_URL,
       width: w,
@@ -188,6 +189,7 @@ async function openInfoPopoverFor(slug: string, itemId: string | null) {
     const h = sizeOverride?.height ?? INFO_HEIGHT;
     const itemQ = itemId ? `&itemId=${encodeURIComponent(itemId)}` : "";
     await OBR.popover.open({
+      anchorReference: "POSITION",
       id: INFO_POPOVER_ID,
       url: `${INFO_URL}?slug=${encodeURIComponent(slug)}${itemQ}`,
       width: w,

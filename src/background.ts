@@ -196,6 +196,7 @@ async function openCluster() {
     // of relying on the post-broadcast flip.
     const side = await computePanelSideAndBroadcast(PANEL_IDS.cluster);
     await OBR.popover.open({
+      anchorReference: "POSITION",
       id: CLUSTER_POPOVER_ID,
       url: `${CLUSTER_URL}?side=${side}`,
       width: TRIGGER_W,
@@ -236,6 +237,7 @@ async function openClusterRow() {
     const rowAnchorLeft = ROW_LEFT_OFFSET + rowOff.dx;
     const side = await computePanelSideAndBroadcast(PANEL_IDS.clusterRow);
     await OBR.popover.open({
+      anchorReference: "POSITION",
       id: CLUSTER_ROW_POPOVER_ID,
       url: `${CLUSTER_ROW_URL}?side=${side}`,
       width: ROW_W,

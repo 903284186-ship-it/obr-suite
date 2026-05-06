@@ -63,6 +63,7 @@ async function openMenuPopoverAt(
 
   try { await OBR.popover.close(POPOVER_ID); } catch {}
   await OBR.popover.open({
+      anchorReference: "POSITION",
     id: POPOVER_ID,
     url: `${URL}?${params.toString()}`,
     width: POPOVER_W,

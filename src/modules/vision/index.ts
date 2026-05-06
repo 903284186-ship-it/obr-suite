@@ -204,6 +204,7 @@ async function openLightEditor(itemId: string): Promise<void> {
   const url = `${assetUrl("vision-light-edit.html")}?id=${encodeURIComponent(itemId)}`;
   try {
     await OBR.popover.open({
+      anchorReference: "POSITION",
       id: POPOVER_LIGHT_EDIT,
       url,
       width: 320,

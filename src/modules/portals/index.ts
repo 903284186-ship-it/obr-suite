@@ -303,6 +303,7 @@ async function openEditPopover(portalId: string, isNew: boolean) {
     const w = sizeOverride?.width ?? EDIT_W;
     const h = sizeOverride?.height ?? EDIT_H;
     await OBR.popover.open({
+      anchorReference: "POSITION",
       id: EDIT_POPOVER_ID,
       url,
       width: w,
@@ -619,6 +620,7 @@ async function openDestinationPopover(
   const url = `${DEST_URL}?p=${encodeURIComponent(JSON.stringify(payload))}`;
   try {
     await OBR.popover.open({
+      anchorReference: "POSITION",
       id: DEST_POPOVER_ID,
       url,
       width: POPOVER_W,

@@ -148,6 +148,7 @@ async function openInfoPopoverFor(cardId: string, roomId: string, itemId: string
     const w = sizeOverride?.width ?? INFO_WIDTH;
     const h = sizeOverride?.height ?? INFO_HEIGHT;
     await OBR.popover.open({
+      anchorReference: "POSITION",
       id: INFO_POPOVER_ID,
       url: `${INFO_URL}?cardId=${encodeURIComponent(cardId)}&roomId=${encodeURIComponent(
         roomId

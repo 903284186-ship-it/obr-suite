@@ -273,6 +273,7 @@ async function openHistoryTrigger(): Promise<void> {
     const userOff = getPanelOffset(PANEL_IDS.diceHistoryTrigger);
     const side = await emitSideHint(PANEL_IDS.diceHistoryTrigger);
     await OBR.popover.open({
+      anchorReference: "POSITION",
       id: HISTORY_TRIGGER_POPOVER_ID,
       url: `${HISTORY_TRIGGER_URL}?side=${side}`,
       width: HISTORY_TRIGGER_W,
@@ -338,6 +339,7 @@ async function openHistory(mode: "transient" | "all" = "transient"): Promise<voi
     const anchorTop = vh - (triggerBottom + HISTORY_TRIGGER_H + HISTORY_GAP);
     await emitSideHint(PANEL_IDS.diceHistory);
     await OBR.popover.open({
+      anchorReference: "POSITION",
       id: HISTORY_POPOVER_ID,
       url: `${HISTORY_URL}?mode=${mode}`,
       width: w,
