@@ -13,7 +13,7 @@
 在 OBR 房间内点击右上角 ⊕ "Add Extension"，粘贴：
 
 ```
-https://obr.dnd.center/obr-suitemanifest.json
+https://obr.dnd.center/obr-suite/manifest.json
 ```
 
 ## 模块清单

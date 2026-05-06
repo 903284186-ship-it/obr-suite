@@ -1,6 +1,6 @@
 // Feature visibility for stable / dev channel split.
 //
-// Set STABLE_HIDES = true before building the stable channel (`/obr-suite`)
+// Set STABLE_HIDES = true before building the stable channel (`/obr-suite/`)
 // to hide features that aren't ready for the public listing yet.
 // Set STABLE_HIDES = false before building the dev channel
 // (`/suite-dev/`) so the full feature set shows up for ongoing

@@ -3,14 +3,14 @@ title: Full Suite
 description: All-in-one TRPG extension bundling dice, initiative tracker, bestiary, character cards, global search, time stop, sync viewport, and portals — designed for D&D 5e play in Chinese / English.
 author: FullPeople
 image: https://raw.githubusercontent.com/FullPeople/obr-suite/main/docs/screenshots/hero.png
-icon: https://obr.dnd.center/obr-suiteexe_icon.png
+icon: https://obr.dnd.center/obr-suite/exe_icon.png
 tags:
   - dice
   - combat
   - tool
   - automation
   - content-pack
-manifest: https://obr.dnd.center/obr-suitemanifest.json
+manifest: https://obr.dnd.center/obr-suite/manifest.json
 learn-more: https://github.com/FullPeople/obr-suite
 ---
 

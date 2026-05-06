@@ -501,7 +501,7 @@ for (let i = 0; i < N_DICE; i++) {
   // createElement (NOT innerHTML with `style="..."`) — embedding url("...")
   // inside a double-quoted HTML attribute terminates the attribute
   // prematurely and the mask never applies.
-  const url = `/obr-suite${imgTypeFor(dice[i].type)}.png`;
+  const url = `/obr-suite/${imgTypeFor(dice[i].type)}.png`;
   const artBase = document.createElement("div");
   artBase.className = "art-base";
   artBase.style.setProperty("-webkit-mask", `url("${url}") center/contain no-repeat`);

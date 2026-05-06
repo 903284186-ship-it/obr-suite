@@ -13,7 +13,7 @@ A third-party extension for [Owlbear Rodeo](https://owlbear.rodeo) that ships ei
 In an OBR room, click the ⊕ "Add Extension" button (top right) and paste:
 
 ```
-https://obr.dnd.center/obr-suitemanifest.json
+https://obr.dnd.center/obr-suite/manifest.json
 ```
 
 ## Modules

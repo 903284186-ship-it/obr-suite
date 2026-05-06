@@ -320,7 +320,7 @@ function chipsHtml(dice: DieResult[]): string {
     const valueStr = d.subtract ? `−${d.value}` : String(d.value);
     parts.push(
       `<span class="die-chip ${cls}${subtractCls}">` +
-      `<img src="/obr-suite${imgFor(d.type)}.png" alt="${escapeHtml(d.type)}" draggable="false">` +
+      `<img src="/obr-suite/${imgFor(d.type)}.png" alt="${escapeHtml(d.type)}" draggable="false">` +
       `<span>${valueStr}</span>` +
       `</span>`,
     );

@@ -77,7 +77,7 @@ function chipsFor(slice: DieResult[]): string {
       d.loser ? "loser" :
       d.value === sides ? "crit" :
       d.value === 1 ? "fail" : "";
-    return `<span class="die ${cls}"><img src="/obr-suite${imgFor(d.type)}.png" alt="">${d.value}</span>`;
+    return `<span class="die ${cls}"><img src="/obr-suite/${imgFor(d.type)}.png" alt="">${d.value}</span>`;
   }).join("");
 }
 
