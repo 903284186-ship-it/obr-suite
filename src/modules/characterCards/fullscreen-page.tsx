@@ -31,7 +31,7 @@ import { subscribeToSfx } from "../dice/sfx-broadcast";
 // third-party widget.
 
 const SERVER_ORIGIN = "https://obr.dnd.center";
-const API_ORIGIN = "https://wild-art-cac6.903284186.workers.dev";
+const API_ORIGIN = "https://111.231.10.33:7310";
 
 // ===== Types ================================================
 interface CharacterData {
