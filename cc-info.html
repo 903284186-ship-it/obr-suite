@@ -478,6 +478,96 @@ html,body{
   0%   {background:rgba(93,173,226,0.55); transform:scale(1.10)}
   100% {background:rgba(255,255,255,0.06); transform:scale(1)}
 }
+
+/* === Backpack section ==========================================
+   Collapsible item grid at the bottom of the card. */
+.bp-sect{margin-top:6px}
+.bp-head{
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:9.5px;font-weight:700;color:#9ab;
+  letter-spacing:0.5px;
+  padding:2px 6px;
+  background:rgba(255,255,255,0.04);
+  border-left:2px solid rgba(93,173,226,0.55);
+  border-radius:0 4px 4px 0;
+  margin-bottom:3px;
+  cursor:pointer;
+  user-select:none;
+}
+.bp-head .bp-count{color:#888;font-weight:400;margin-left:4px}
+.bp-head .bp-toggle{margin-left:auto;font-size:8px;color:#888;padding:0 2px}
+.bp-head .bp-add{
+  margin-left:6px;font-size:14px;color:#5dade2;cursor:pointer;
+  padding:0 4px;line-height:1;
+  transition:color .12s;
+}
+.bp-head .bp-add:hover{color:#8ecaf5}
+.bp-grid{
+  display:flex;flex-wrap:wrap;gap:3px;
+  padding:0 2px;
+}
+.bp-chip{
+  display:inline-block;
+  padding:1px 6px;
+  font-size:10px;line-height:1.4;font-weight:600;
+  border-radius:3px;
+  border-left:2px solid transparent;
+  cursor:pointer;
+  white-space:nowrap;
+  max-width:160px;
+  overflow:hidden;text-overflow:ellipsis;
+  transition:background .12s, color .12s, transform .08s;
+}
+.bp-chip:hover{filter:brightness(1.2)}
+.bp-chip:active{transform:scale(0.96)}
+/* Category colors (border-left + tinted background) */
+.bp-chip.cat-potion{background:rgba(78,205,196,0.10);border-left-color:#4ecdc4;color:#8ee4de}
+.bp-chip.cat-scroll{background:rgba(253,203,110,0.10);border-left-color:#fdcb6e;color:#fde2a8}
+.bp-chip.cat-gear{background:rgba(162,155,254,0.10);border-left-color:#a29bfe;color:#c8c3ff}
+.bp-chip.cat-weapon{background:rgba(231,76,60,0.10);border-left-color:#e74c3c;color:#f09088}
+.bp-chip.cat-other{background:rgba(255,255,255,0.06);border-left-color:#888;color:#aaa}
+
+/* Inline add-item search */
+.bp-search{
+  display:flex;flex-direction:column;gap:3px;
+  padding:4px 2px;margin-top:2px;
+}
+.bp-search .bp-search-input{
+  width:100%;box-sizing:border-box;
+  background:rgba(255,255,255,0.06);
+  border:1px solid rgba(93,173,226,0.35);
+  border-radius:4px;
+  padding:3px 6px;font-size:10px;color:#eee;
+  outline:none;font-family:inherit;
+}
+.bp-search .bp-search-input:focus{border-color:rgba(93,173,226,0.7)}
+.bp-search .bp-results{
+  max-height:140px;overflow-y:auto;
+  display:flex;flex-direction:column;gap:1px;
+}
+.bp-search .bp-result{
+  padding:3px 6px;font-size:10px;color:#ccc;
+  background:rgba(255,255,255,0.03);
+  border-radius:3px;cursor:pointer;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.bp-search .bp-result:hover{background:rgba(93,173,226,0.18);color:#fff}
+.bp-search .bp-result .bp-r-type{font-size:8px;color:#888;margin-left:6px;flex-shrink:0}
+
+/* Transfer target list */
+.bp-transfer-list{
+  display:flex;flex-direction:column;gap:3px;
+  padding:6px 2px;
+}
+.bp-transfer-list .bp-transfer-opt{
+  padding:4px 8px;font-size:10px;color:#ccc;
+  background:rgba(255,255,255,0.04);
+  border-radius:4px;cursor:pointer;
+  display:flex;align-items:center;gap:6px;
+}
+.bp-transfer-list .bp-transfer-opt:hover{background:rgba(93,173,226,0.18);color:#fff}
+.bp-transfer-cancel{font-size:9px;color:#888;cursor:pointer;padding:2px 6px;margin-top:2px}
+.bp-transfer-cancel:hover{color:#ccc}
 </style>
 </head>
 <body>
