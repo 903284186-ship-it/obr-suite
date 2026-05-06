@@ -823,6 +823,38 @@ async function findEntryData(entry: Entry): Promise<DataEntry | null> {
       }
     }
   }
+  // Fallback: mundane base items (Longsword etc.) are in items-base.json,
+  // not items.json which only contains magic items.
+  if (!found) {
+    const itemCategories = [4, 31, 47, 56, 57];
+    if (itemCategories.includes(entry.c)) {
+      try {
+        const bases = getEnabledLibraryBases();
+        const responses = await Promise.all(
+          bases.map(async (base) => {
+            try {
+              const res = await fetch(`${base}/data/items-base.json`, { cache: "force-cache" });
+              if (!res.ok) return null;
+              const json = await res.json();
+              return (json.baseitem ?? []) as DataEntry[];
+            } catch { return null; }
+          }),
+        );
+        const merged: DataEntry[] = [];
+        const seen = new Set<string>();
+        for (const pool of responses) {
+          if (!pool) continue;
+          for (const e of pool) {
+            const key = `${(e.ENG_name || e.name || "").toLowerCase()}|${(e.source || "").toUpperCase()}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            merged.push(e);
+          }
+        }
+        found = matchAny(merged);
+      } catch {}
+    }
+  }
   if (!found) return null;
   if (found._copy) {
     const cp = found._copy;
@@ -836,15 +868,20 @@ async function findEntryData(entry: Entry): Promise<DataEntry | null> {
         !e._copy;
       let parent = arr.find(isParent);
       if (!parent) {
-        try {
-          const base = dataBase(getLocalLang());
-          const res = await fetch(`${base}/data/items.json`, { cache: "force-cache" });
-          if (res.ok) {
-            const raw = await res.json();
-            const pool = Array.isArray(raw) ? raw : (raw.item ?? []);
-            parent = pool.find((e: any) => isParent(e));
-          }
-        } catch {}
+        const tryFindParent = async (file: string, key: string) => {
+          try {
+            const base = dataBase(getLocalLang());
+            const res = await fetch(`${base}/data/${file}`, { cache: "force-cache" });
+            if (res.ok) {
+              const raw = await res.json();
+              const pool = Array.isArray(raw) ? raw : (raw[key] ?? []);
+              return pool.find((e: any) => isParent(e));
+            }
+          } catch {}
+          return null;
+        };
+        parent = await tryFindParent("items.json", "item");
+        if (!parent) parent = await tryFindParent("items-base.json", "baseitem");
       }
       if (parent) {
         return { ...parent, ...found, _copyResolvedFrom: parent.ENG_name || parent.name };
