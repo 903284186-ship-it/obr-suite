@@ -122,7 +122,6 @@ async function openBar(): Promise<void> {
     const h_q = hAnchor === "LEFT" ? "left" : "right";
     const v_q = vAnchor === "TOP" ? "top" : "bottom";
     await OBR.popover.open({
-      anchorReference: "POSITION",
       id: POPOVER_ID,
       url: `${URL}?h=${h_q}&v=${v_q}`,
       width: w,
