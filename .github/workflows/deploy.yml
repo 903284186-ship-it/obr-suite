@@ -17,6 +17,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      SUITE_BASE: obr-suite
     steps:
       - uses: actions/checkout@v4
 
@@ -27,15 +29,6 @@ jobs:
 
       - run: npm ci
       - run: npm run build
-
-      - name: Mirror dist contents into suite/ subdirectory
-        run: |
-          mkdir -p dist/suite
-          for item in dist/*; do
-            name=$(basename "$item")
-            [ "$name" = "suite" ] && continue
-            cp -r "$item" dist/suite/
-          done
 
       - uses: actions/upload-pages-artifact@v3
         with:

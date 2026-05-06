@@ -5,12 +5,12 @@
   "author": "903284186-ship-it",
   "homepage_url": "https://github.com/903284186-ship-it/obr-suite",
   "description": "All-in-one TRPG suite / TRPG 全能套装：骰子、先攻、怪物图鉴、角色卡、搜索、时停、视口、传送门",
-  "icon": "/suite/exe_icon.png",
-  "background_url": "/suite/background.html",
+  "icon": "./exe_icon.png",
+  "background_url": "./background.html",
   "action": {
     "title": "骰子 / Dice",
-    "icon": "/suite/d20.png",
-    "popover": "/suite/dice-panel.html",
+    "icon": "./d20.png",
+    "popover": "./dice-panel.html",
     "width": 380,
     "height": 620
   }
