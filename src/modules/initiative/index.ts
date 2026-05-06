@@ -408,12 +408,14 @@ export async function setupInitiative(): Promise<void> {
       const payload = event.data as DragEndPayload | undefined;
       if (payload?.panelId !== PANEL_IDS.initiative) return;
       if (!panelIsOpen) return;
+      try { await OBR.popover.close(POPOVER_ID); } catch {}
       await openPanel(lastExpandedState());
     }),
   );
   unsubs.push(
     OBR.broadcast.onMessage(BC_PANEL_RESET, async () => {
       if (!panelIsOpen) return;
+      try { await OBR.popover.close(POPOVER_ID); } catch {}
       await openPanel(lastExpandedState());
     }),
   );

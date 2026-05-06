@@ -392,9 +392,8 @@ export async function setupCharacterCards(): Promise<void> {
   const reanchorInfoPopover = async () => {
     if (!infoPopoverOpen || !currentInfoCard) return;
     const roomId = OBR.room.id || "default";
-    // openInfoPopoverFor short-circuits when infoPopoverOpen is true,
-    // so flip the flag and let it run the open path.
     infoPopoverOpen = false;
+    try { await OBR.popover.close(INFO_POPOVER_ID); } catch {}
     await openInfoPopoverFor(currentInfoCard, roomId, currentInfoItemId);
   };
   unsubs.push(onViewportResize(reanchorInfoPopover));

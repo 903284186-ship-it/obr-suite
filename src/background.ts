@@ -187,13 +187,14 @@ function getTriggerBottom(): number { return IS_MOBILE ? MOBILE_TRIGGER_BOTTOM_O
 
 async function openCluster() {
   try {
+    if (clusterIsOpen) {
+      try { await OBR.popover.close(CLUSTER_POPOVER_ID); } catch {}
+      clusterIsOpen = false;
+    }
     const vh = await OBR.viewport.getHeight();
     const userOff = getPanelOffset(PANEL_IDS.cluster);
     const left = getTriggerLeft() + userOff.dx;
     const bottom = getTriggerBottom() + userOff.dy;
-    // Side-aware drag handle — compute up front so the iframe can
-    // render its handle on the correct edge from first paint instead
-    // of relying on the post-broadcast flip.
     const side = await computePanelSideAndBroadcast(PANEL_IDS.cluster);
     await OBR.popover.open({
       id: CLUSTER_POPOVER_ID,
@@ -222,12 +223,11 @@ async function closeCluster() {
 
 async function openClusterRow() {
   try {
+    if (clusterRowIsOpen) {
+      try { await OBR.popover.close(CLUSTER_ROW_POPOVER_ID); } catch {}
+      clusterRowIsOpen = false;
+    }
     const vh = await OBR.viewport.getHeight();
-    // Cluster-row position is INDEPENDENT of the cluster trigger's
-    // user offset — dragging the cluster shouldn't reposition the
-    // row (and vice versa). The row's default position sits just
-    // above the trigger's DEFAULT position; user offsets layered on
-    // top via rowOff alone.
     const rowOff = getPanelOffset(PANEL_IDS.clusterRow);
     const triggerBottomDefault = getTriggerBottom();
     const triggerTopDefault = triggerBottomDefault + TRIGGER_H;

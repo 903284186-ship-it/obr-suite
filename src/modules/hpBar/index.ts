@@ -399,6 +399,7 @@ export async function setupHpBar(): Promise<void> {
         const id = currentItemId;
         popoverOpen = false;
         currentItemId = null;
+        try { await OBR.popover.close(POPOVER_ID); } catch {}
         await openPopoverFor(id);
       }
     }),

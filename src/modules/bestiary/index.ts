@@ -506,9 +506,13 @@ export async function setupBestiary(): Promise<void> {
   // accessible). Always-on; internal flags gate.
   unsubs.push(
     onViewportResize(async () => {
-      if (isOpen) await openPanel();
+      if (isOpen) {
+        try { await OBR.popover.close(POPOVER_ID); } catch {}
+        await openPanel();
+      }
       if (infoPopoverOpen && currentInfoSlug) {
         infoPopoverOpen = false;
+        try { await OBR.popover.close(INFO_POPOVER_ID); } catch {}
         await openInfoPopoverFor(currentInfoSlug, currentInfoItemId);
       }
     }),
@@ -520,10 +524,14 @@ export async function setupBestiary(): Promise<void> {
     OBR.broadcast.onMessage(BC_PANEL_DRAG_END, async (event) => {
       const payload = event.data as DragEndPayload | undefined;
       if (payload?.panelId === PANEL_IDS.bestiaryPanel) {
-        if (isOpen) await openPanel();
+        if (isOpen) {
+          try { await OBR.popover.close(POPOVER_ID); } catch {}
+          await openPanel();
+        }
       } else if (payload?.panelId === PANEL_IDS.bestiaryInfo) {
         if (infoPopoverOpen && currentInfoSlug) {
           infoPopoverOpen = false;
+          try { await OBR.popover.close(INFO_POPOVER_ID); } catch {}
           await openInfoPopoverFor(currentInfoSlug, currentInfoItemId);
         }
       }
