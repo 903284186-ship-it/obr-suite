@@ -190,7 +190,7 @@ async function openCluster() {
     const vh = await OBR.viewport.getHeight();
     const userOff = getPanelOffset(PANEL_IDS.cluster);
     const left = getTriggerLeft() + userOff.dx;
-    const bottom = getTriggerBottom() + userOff.dy;
+    const bottom = getTriggerBottom() - userOff.dy;
     // Side-aware drag handle — compute up front so the iframe can
     // render its handle on the correct edge from first paint instead
     // of relying on the post-broadcast flip.
@@ -282,7 +282,7 @@ registerPanelBbox(PANEL_IDS.cluster, async () => {
     const vh = await OBR.viewport.getHeight();
     const userOff = getPanelOffset(PANEL_IDS.cluster);
     const left = getTriggerLeft() + userOff.dx;
-    const bottom = getTriggerBottom() + userOff.dy;
+    const bottom = getTriggerBottom() - userOff.dy;
     return {
       left,
       top: vh - bottom - TRIGGER_H,
