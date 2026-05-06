@@ -4,7 +4,7 @@ import basicSsl from "@vitejs/plugin-basic-ssl";
 import { resolve } from "path";
 
 // Dual deploy targets:
-//   stable → /suite/      (default)
+//   stable → /obr-suite      (default)
 //   dev    → /suite-dev/  (set SUITE_BASE=suite-dev before vite build)
 //
 // IMPORTANT: pass the dir name WITHOUT a leading slash. Git Bash on
@@ -13,7 +13,7 @@ import { resolve } from "path";
 // the MSYS root ships under C:\Program Files\Git\ — and the assets end
 // up emitted at /Git/suite-dev/assets/* which 404s on the server.
 // Passing the bare name "suite-dev" sidesteps the conversion entirely;
-// we add the slashes here. Old "/suite/" / "/suite-dev/" forms still
+// we add the slashes here. Old "/obr-suite" / "/suite-dev/" forms still
 // work — normaliseBase() strips any MSYS-prepended prefix.
 function normaliseBase(raw: string): string {
   let s = raw.trim();
@@ -24,7 +24,7 @@ function normaliseBase(raw: string): string {
   if (!s.endsWith("/")) s = s + "/";
   return s;
 }
-const SUITE_BASE = normaliseBase(process.env.SUITE_BASE || "/suite/");
+const SUITE_BASE = normaliseBase(process.env.SUITE_BASE || "/obr-suite");
 
 export default defineConfig(({ command }) => ({
   plugins:
