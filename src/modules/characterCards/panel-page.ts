@@ -446,7 +446,7 @@ function render() {
   // If the currently-active card was hidden by the DM and we're a
   // player, drop the view back to empty so the iframe doesn't keep
   // a stale reference visible.
-  if (current.type === "card" && !visibleCards.find((c) => c.id === current.id)) {
+  if (current.type === "card" && !visibleCards.find((c) => c.id === (current as Extract<View, { type: "card" }>).id)) {
     current = { type: "empty" };
   }
   listEl.innerHTML = "";

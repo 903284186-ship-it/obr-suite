@@ -237,7 +237,7 @@ function StatsBanner({
 
 function rollExpr(label: string, expr: string, advMode?: "adv" | "dis") {
   if (!expr) return;
-  fireQuickRoll({ expression: expr, label, advMode }).catch(() => {});
+  fireQuickRoll({ expression: expr, label, advMode });
 }
 
 function AbilitiesAndSkills({ data }: { data: CharacterData }) {

@@ -714,7 +714,7 @@ async function readPosOnce(): Promise<void> {
     document.documentElement.style.setProperty("--tx", `${sxScreen}px`);
     document.documentElement.style.setProperty("--ty", `${syScreen}px`);
     document.documentElement.style.setProperty("--vp-scale", String(scale));
-    const winSlot = flashSlot >= 0 && slots[flashSlot] ? slots[flashSlot] : { ox: 0, oy: 0, size: BASE_SIZE };
+    const winSlot = flashSlot >= 0 && slots[flashSlot] ? slots[flashSlot]! : { ox: 0, oy: 0, size: BASE_SIZE };
     document.documentElement.style.setProperty("--flash-x", `${sxScreen + winSlot.ox * scale}px`);
     document.documentElement.style.setProperty("--flash-y", `${syScreen + winSlot.oy * scale}px`);
   } catch {}
