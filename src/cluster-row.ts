@@ -335,7 +335,6 @@ async function onGear() {
       url: SETTINGS_URL,
       width: 640,
       height: 580,
-      anchorReference: "POSITION",
       anchorPosition: { left: vw / 2, top: vh / 2 },
       anchorOrigin: { horizontal: "CENTER", vertical: "CENTER" },
       transformOrigin: { horizontal: "CENTER", vertical: "CENTER" },

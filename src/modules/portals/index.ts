@@ -307,7 +307,6 @@ async function openEditPopover(portalId: string, isNew: boolean) {
       url,
       width: w,
       height: h,
-      anchorReference: "POSITION",
       anchorPosition: {
         left: Math.round(vw / 2) + userOff.dx,
         top: EDIT_TOP_OFFSET + userOff.dy,
@@ -623,7 +622,6 @@ async function openDestinationPopover(
       url,
       width: POPOVER_W,
       height: POPOVER_H,
-      anchorReference: "POSITION",
       anchorPosition: { left: Math.round(anchorLeft), top: Math.round(anchorTop) },
       anchorOrigin: { horizontal: "CENTER", vertical: placeBelow ? "TOP" : "BOTTOM" },
       transformOrigin: { horizontal: "CENTER", vertical: placeBelow ? "TOP" : "BOTTOM" },

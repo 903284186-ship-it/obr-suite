@@ -184,7 +184,6 @@ async function openPanel(expanded: boolean) {
       url: `${PANEL_URL}?expanded=${expanded ? 1 : 0}`,
       width,
       height,
-      anchorReference: "POSITION",
       anchorPosition: {
         left: Math.round(vw / 2) + userOff.dx,
         top: TOP_OFFSET + userOff.dy,

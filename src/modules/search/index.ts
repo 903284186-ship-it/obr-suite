@@ -126,7 +126,6 @@ async function openBar(): Promise<void> {
       url: `${URL}?h=${h_q}&v=${v_q}`,
       width: w,
       height: h,
-      anchorReference: "POSITION",
       anchorPosition: anchorPos,
       anchorOrigin: { horizontal: hAnchor, vertical: vAnchor },
       transformOrigin: { horizontal: hAnchor, vertical: vAnchor },
