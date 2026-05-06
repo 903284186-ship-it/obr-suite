@@ -824,11 +824,25 @@ async function findEntryData(entry: Entry): Promise<DataEntry | null> {
     }
   }
   if (!found) return null;
-  if (!found.entries && found._copy) {
+  if (found._copy) {
     const cp = found._copy;
     const parentName = (cp.ENG_name || cp.name || "")?.toLowerCase();
     if (parentName) {
-      const parent = arr.find((e) => (e.ENG_name || e.name || "").toLowerCase() === parentName);
+      // Try local array first
+      let parent = arr.find((e) => (e.ENG_name || e.name || "").toLowerCase() === parentName);
+      // Fallback: re-fetch full items.json to find the base entry
+      if (!parent) {
+        try {
+          const base = dataBase(getLocalLang());
+          const res = await fetch(`${base}/data/items.json`, { cache: "force-cache" });
+          if (res.ok) {
+            const raw = await res.json();
+            const pool = Array.isArray(raw) ? raw : (raw.item ?? []);
+            parent = pool.find((e: any) =>
+              (e.ENG_name || e.name || "").toLowerCase() === parentName);
+          }
+        } catch {}
+      }
       if (parent) {
         return { ...parent, ...found, _copyResolvedFrom: parent.ENG_name || parent.name };
       }
