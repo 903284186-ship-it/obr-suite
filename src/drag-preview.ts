@@ -52,6 +52,9 @@ let session: {
   startOffset: PanelOffset;
 } | null = null;
 
+let lastDx = 0;
+let lastDy = 0;
+
 function panelLabel(panelId: string): string {
   switch (panelId) {
     case "cluster": return "悬浮按钮";
@@ -182,9 +185,9 @@ OBR.onReady(() => {
   // defensive option.
   document.addEventListener("pointermove", (e) => {
     if (!session) return;
-    const dx = e.screenX - session.startScreenX;
-    const dy = e.screenY - session.startScreenY;
-    applyGhost(session.bbox.left + dx, session.bbox.top + dy);
+    lastDx = e.screenX - session.startScreenX;
+    lastDy = e.screenY - session.startScreenY;
+    applyGhost(session.bbox.left + lastDx, session.bbox.top + lastDy);
   });
 
   document.addEventListener("pointerup", (e) => {
@@ -194,7 +197,8 @@ OBR.onReady(() => {
     endSession(true, dx, dy);
   });
   document.addEventListener("pointercancel", () => {
-    endSession(false, 0, 0);
+    if (!session) return;
+    endSession(true, lastDx, lastDy);
   });
 
   // Esc cancels — quick way out if the gesture got into a weird state.
@@ -210,7 +214,7 @@ OBR.onReady(() => {
   blocker.addEventListener("contextmenu", (e) => {
     if (!session) return;
     e.preventDefault();
-    endSession(false, 0, 0);
+    endSession(true, lastDx, lastDy);
   });
 
   // 30-second safety timeout: if no pointerup arrives in this long,

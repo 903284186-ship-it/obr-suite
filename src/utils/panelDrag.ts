@@ -24,7 +24,6 @@
 import OBR from "@owlbear-rodeo/sdk";
 import {
   BC_PANEL_DRAG_START,
-  BC_PANEL_DRAG_CANCEL,
   computePanelBbox,
 } from "./panelLayout";
 
@@ -106,34 +105,21 @@ export function bindPanelDrag(handleEl: HTMLElement, panelId: string): () => voi
     } catch {}
 
     // Pre-mount safety net: if the user releases before the modal
-    // mounts (unlikely but possible during the ~50ms open-modal
-    // window), broadcast a cancel so background can close any modal
-    // that did manage to open. This listener self-destructs on first
-    // pointerup or after 800ms — long enough for the modal to be up.
-    const cleanup = (cancelled: boolean) => {
+    // mounts, just disarm. We no longer broadcast cancel because on
+    // touch devices pointercancel can fire spuriously when the modal
+    // opens on top of the source iframe. The modal-side safety nets
+    // (Esc, click blocker, 30s timeout) handle stuck sessions.
+    const cleanup = () => {
       handleEl.classList.remove("is-dragging");
       document.removeEventListener("pointerup", onEarlyUp, true);
       document.removeEventListener("pointercancel", onEarlyCancel, true);
       clearTimeout(armTimer);
-      if (cancelled) {
-        try {
-          OBR.broadcast.sendMessage(
-            BC_PANEL_DRAG_CANCEL,
-            { panelId },
-            { destination: "LOCAL" },
-          );
-        } catch {}
-      }
     };
-    const onEarlyUp = () => cleanup(true);
-    const onEarlyCancel = () => cleanup(true);
+    const onEarlyUp = () => cleanup();
+    const onEarlyCancel = () => cleanup();
     document.addEventListener("pointerup", onEarlyUp, true);
     document.addEventListener("pointercancel", onEarlyCancel, true);
-    // Disarm after the modal should have mounted. Modal owns the
-    // gesture from then on; if its own pointerup never fires, modal-
-    // side safety nets (Esc, click blocker, 30s timeout in background)
-    // take over.
-    const armTimer = setTimeout(() => cleanup(false), 800);
+    const armTimer = setTimeout(() => cleanup(), 800);
   };
 
   handleEl.addEventListener("pointerdown", onPointerDown);
