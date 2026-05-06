@@ -503,6 +503,7 @@ async function loadCategoryData(
   // case conventions for the source segment in filenames:
   //   - kiwee.top:        bestiary-mm.json (lowercase)
   //   - homebrew/GitHub:  bestiary-HOMEBREW.json (uppercase)
+  //   - dickytwister.org: bestiary-mm.json (all lowercase, entire path)
   // Try every case variant in parallel — case-sensitive servers like
   // GitHub Pages 404 on the wrong case, so we have to send all
   // candidates and merge whichever 200s.
@@ -510,9 +511,13 @@ async function loadCategoryData(
     ? [cat.data!.fileBySource(s)]
     : [(cat.data as { file: string }).file];
   const candidatePaths = new Set<string>([
-    ...filePathsForSrc(src),                  // lowercase
+    ...filePathsForSrc(src),                  // lowercase source
     ...filePathsForSrc(srcOriginal),          // original case
-    ...filePathsForSrc(srcOriginal.toUpperCase()),  // uppercase
+    ...filePathsForSrc(srcOriginal.toUpperCase()),  // uppercase source
+    // Entire path lowercased — needed for servers where EVERYTHING is
+    // lowercase (e.g. 5e.dickytwister.org uses bestiary/bestiary-mm.json
+    // not bestiary/bestiary-MM.json).
+    ...filePathsForSrc(src).map((p) => p.toLowerCase()),
   ]);
   const bases = getEnabledLibraryBases();
   const p = (async () => {
@@ -1675,13 +1680,16 @@ previewEl.addEventListener("click", async (e) => {
     }
     let type = "";
     try {
-      const res = await fetch(`${dataBase(getLocalLang())}/data/items.json`, { cache: "force-cache" });
-      if (res.ok) {
+      const base = dataBase(getLocalLang());
+      const tryFindType = async (file: string, key: string) => {
+        const res = await fetch(`${base}/data/${file}`, { cache: "force-cache" });
+        if (!res.ok) return null;
         const data = await res.json();
-        const arr = Array.isArray(data) ? data : (data.item ?? []);
-        const found = arr.find((it: any) => it.name === srdName);
-        if (found?.type) type = String(found.type);
-      }
+        const arr = Array.isArray(data) ? data : (data[key] ?? []);
+        return arr.find((it: any) => it.name === srdName)?.type ?? null;
+      };
+      type = (await tryFindType("items.json", "item")) || "";
+      if (!type) type = (await tryFindType("items-base.json", "baseitem")) || "";
     } catch {}
     try {
       OBR.broadcast.sendMessage(

@@ -1,5 +1,6 @@
 import { render } from "preact";
 import { useEffect, useState, useMemo, useCallback } from "preact/hooks";
+import OBR from "@owlbear-rodeo/sdk";
 import { fireQuickRoll } from "../dice/tags";
 import { subscribeToSfx } from "../dice/sfx-broadcast";
 
@@ -365,11 +366,162 @@ function Defenses({ data }: { data: CharacterData }) {
   );
 }
 
-function CombatSection({ data }: { data: CharacterData }) {
+const DMGTYPE_ZH: Record<string, string> = {
+  A: "酸", B: "钝击", C: "冷冻", F: "火焰", FORCE: "力场", "F_": "力场",
+  L: "闪电", N: "死灵", P: "穿刺", POISON: "毒素", PSY: "心灵",
+  RAD: "光耀", S: "挥砍", T: "雷鸣",
+};
+const WPROP_ZH: Record<string, string> = {
+  V: "多用", F: "灵巧", L: "轻型", H: "重型", "2H": "双手",
+  T: "投掷", RLD: "装填", AF: "弹药", BF: "连射", S: "特殊", R: "触及",
+};
+
+function mod(score: number): number {
+  return Math.floor((score - 10) / 2);
+}
+function pb(totalLevel: number): number {
+  return Math.ceil(totalLevel / 4) + 1;
+}
+
+function parseWeaponProps(props: any): { isFinesse: boolean; isRanged: boolean; isMelee: boolean; labels: string } {
+  const arr: string[] = Array.isArray(props) ? props.map((p) => String(p)) : [];
+  let isFinesse = false, isRanged = false, isMelee = false;
+  const labels: string[] = [];
+  for (const p of arr) {
+    const base = p.split("|")[0];
+    if (base === "F") isFinesse = true;
+    if (base === "AF" || base === "RLD" || base === "T") isRanged = true;
+    const zh = WPROP_ZH[base];
+    if (zh && !labels.includes(zh)) labels.push(zh);
+  }
+  return { isFinesse, isRanged, isMelee, labels: labels.join(" · ") };
+}
+
+function parseWeaponType(rawType: string): { isRanged: boolean; isMelee: boolean } {
+  const t = rawType.toUpperCase().split("|")[0];
+  return { isRanged: t === "R", isMelee: t === "M" };
+}
+
+function BpWeaponList({ bpWeapons }: { bpWeapons: any[] }) {
+  if (bpWeapons.length === 0) return null;
+  return (
+    <div>
+      <div style={{ color: "var(--ink-mute)", fontSize: "11px", padding: "4px 8px", marginTop: "4px", borderTop: "1px solid rgba(138,111,63,0.15)" }}>
+        背包武器
+      </div>
+      {bpWeapons.map((w) => {
+        const atkExpr = `1d20${w.atkMod >= 0 ? "+" : ""}${w.atkMod}`;
+        return (
+          <div class="weap" style={{ background: "rgba(245,166,35,0.04)" }}>
+            <div class="weap-name">⚔ {w.name}</div>
+            <div class="weap-atk"
+              onClick={() => fireQuickRoll({ expression: atkExpr, label: `${w.name} 命中` })}
+              onContextMenu={(e: any) => { e.preventDefault(); fireQuickRoll({ expression: atkExpr, label: `${w.name} 命中（优势）`, advMode: "adv" }); }}
+              title={`左键投，右键优势 · ${atkExpr}`}>
+              {fmtMod(w.atkMod)}
+            </div>
+            <div class="weap-dmg"
+              onClick={() => fireQuickRoll({ expression: w.damage, label: `${w.name} 伤害${w.damage_type ? `(${w.damage_type})` : ""}` })}
+              title={`${w.damage} ${w.damage_type ?? ""}`}>
+              {w.damage} {w.damage_type ? <span style={{ opacity: 0.7, fontSize: "10px" }}>{w.damage_type}</span> : ""}
+            </div>
+            {w.extra_damage && (
+              <div class="weap-dmg weap-dmg-extra"
+                onClick={(e: any) => {
+                  e.stopPropagation();
+                  fireQuickRoll({ expression: w.extra_damage, label: `${w.name} 双手伤害` });
+                }}
+                title={`双手 ${w.extra_damage}`}>
+                +{w.extra_damage} 双手
+              </div>
+            )}
+            {(w.properties || w.weight != null) && (
+              <div class="weap-props">
+                {[w.properties, w.weight != null ? `${w.weight}磅` : null].filter(Boolean).join(" · ")}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function CombatSection({ data, cardId }: { data: CharacterData; cardId: string }) {
   const cb = data.combat || {};
   const armor = cb.armor || {};
   const shield = cb.shield || {};
   const weapons: any[] = Array.isArray(cb.weapons) ? cb.weapons : [];
+  const [bpWeapons, setBpWeapons] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!cardId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const meta = await OBR.room.getMetadata();
+        const bpKey = `com.obr-suite/backpack/${cardId}`;
+        const raw = meta[bpKey];
+        const bp: any[] = Array.isArray(raw) ? raw : [];
+        const weaponTypes = bp.filter((e: any) => {
+          const t = (e.type || "").toUpperCase().split("|")[0];
+          return t === "M" || t === "R";
+        });
+        if (weaponTypes.length === 0) return;
+
+        const base = "https://5e.kiwee.top";
+        const [itemsRes, baseRes] = await Promise.all([
+          fetch(`${base}/data/items.json`, { cache: "force-cache" }),
+          fetch(`${base}/data/items-base.json`, { cache: "force-cache" }),
+        ]);
+        const pool: any[] = [];
+        if (itemsRes.ok) {
+          const j = await itemsRes.json();
+          pool.push(...(Array.isArray(j) ? j : (j.item || [])));
+        }
+        if (baseRes.ok) {
+          const j = await baseRes.json();
+          pool.push(...(j.baseitem || []));
+        }
+
+        const abilities = data.abilities || {};
+        const str = Number(abilities.str?.score ?? 10);
+        const dex = Number(abilities.dex?.score ?? 10);
+        const lvl = data.total_level ?? 1;
+        const pBonus = pb(lvl);
+
+        const parsed = weaponTypes.map((entry: any) => {
+          const detail = pool.find((it: any) =>
+            it.name === entry.name || it.ENG_name === entry.srdName,
+          );
+          if (!detail) return null;
+          const p = parseWeaponProps(detail.property);
+          const t = parseWeaponType(detail.type || "");
+          const isRanged = t.isRanged || p.isRanged || !!detail.range;
+          const isMelee = t.isMelee || p.isMelee;
+          let atkMod: number;
+          if (isRanged && !isMelee) {
+            atkMod = mod(dex) + pBonus;
+          } else if (p.isFinesse) {
+            atkMod = Math.max(mod(str), mod(dex)) + pBonus;
+          } else {
+            atkMod = mod(str) + pBonus;
+          }
+          return {
+            name: detail.name || entry.name,
+            atkMod,
+            damage: String(detail.dmg1 || ""),
+            damage_type: DMGTYPE_ZH[String(detail.dmgType || "").toUpperCase()] || "",
+            extra_damage: detail.dmg2 ? String(detail.dmg2) : null,
+            properties: p.labels || null,
+            weight: detail.weight ?? null,
+          };
+        }).filter(Boolean);
+        if (!cancelled) setBpWeapons(parsed);
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, [cardId]);
 
   return (
     <div class="sec">
@@ -404,7 +556,7 @@ function CombatSection({ data }: { data: CharacterData }) {
             <div class="weap-dmg" style={{ visibility: "hidden" }}>—</div>
           </div>
         )}
-        {weapons.length === 0 && !armor.name && !shield.ac_bonus && (
+        {weapons.length === 0 && !armor.name && !shield.ac_bonus && bpWeapons.length === 0 && (
           <div style={{ color: "var(--ink-mute)", fontStyle: "italic", padding: "8px" }}>
             暂未配置武器或护甲
           </div>
@@ -458,6 +610,7 @@ function CombatSection({ data }: { data: CharacterData }) {
             </div>
           );
         })}
+        <BpWeaponList bpWeapons={bpWeapons} />
       </div>
     </div>
   );
@@ -877,7 +1030,7 @@ function App() {
           </div>
         )}
         {tab === "combat" && (
-          <CombatSection data={data} />
+          <CombatSection data={data} cardId={cardId} />
         )}
         {tab === "spells" && (
           <SpellsSection data={data} />
