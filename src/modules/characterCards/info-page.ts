@@ -92,9 +92,46 @@ async function loadWeaponDetails(): Promise<any[]> {
   return weaponDetailPending;
 }
 
+const MONEY_KEY_PREFIX = "com.obr-suite/money/";
+
+function moneyKey(cardId: string): string {
+  return `${MONEY_KEY_PREFIX}${cardId}`;
+}
+
+async function readMoney(cardId: string): Promise<number | null> {
+  try {
+    const meta = await OBR.room.getMetadata();
+    const raw = meta[moneyKey(cardId)];
+    if (typeof raw === "number" && isFinite(raw)) return raw;
+  } catch {}
+  return null;
+}
+
+async function writeMoney(cardId: string, value: number): Promise<void> {
+  try {
+    await OBR.room.setMetadata({ [moneyKey(cardId)]: value });
+  } catch (e) {
+    console.warn("[cc-info] writeMoney failed", e);
+  }
+}
+
+function computeGpFromCard(d: any): number {
+  const w = d?.inventory?.currency?.wallet;
+  if (!w) return 0;
+  return (Number(w.pp) || 0) * 10
+    + (Number(w.gp) || 0)
+    + (Number(w.ep) || 0) * 0.5
+    + (Number(w.sp) || 0) * 0.1
+    + (Number(w.cp) || 0) * 0.01;
+}
+
+function formatMoney(n: number): string {
+  return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 async function computeBackpackWeapons(bp: BackpackData, d: any): Promise<any[]> {
   const weaponTypes = bp.filter((e) => {
-    const t = (e.type || "").toUpperCase().split("|")[0];
+    const t = (e.type || "").trim().toUpperCase().split("|")[0];
     return t === "M" || t === "R";
   });
   if (weaponTypes.length === 0) return [];
@@ -108,7 +145,7 @@ async function computeBackpackWeapons(bp: BackpackData, d: any): Promise<any[]> 
 
   return weaponTypes.map((entry) => {
     const detail = pool.find((it: any) =>
-      it.name === entry.name || it.ENG_name === entry.srdName,
+      it.name === entry.name || it.ENG_name === entry.srdName || it.name === entry.srdName,
     );
     if (!detail) return null;
     const propsArr: string[] = Array.isArray(detail.property) ? detail.property.map((p: any) => String(p)) : [];
@@ -222,6 +259,7 @@ let currentCardId: string | null = null;
 const cardCache = new Map<string, any>();
 
 let currentBackpack: BackpackData = [];
+let currentMoney: number | null = null;
 let backpackExpanded = true;
 let showTransferList = false;
 let transferItemName: string | null = null;
@@ -238,8 +276,9 @@ async function showCard(cardId: string, roomId: string) {
   // Cache hit: render instantly, 0 network wait, 0 intermediate frame.
   const cached = cardCache.get(cardId);
   if (cached) {
-    const [live, bp] = await Promise.all([readLiveBubbles(), readBackpack(cardId)]);
+    const [live, bp, moneyOverride] = await Promise.all([readLiveBubbles(), readBackpack(cardId), readMoney(cardId)]);
     currentBackpack = bp;
+    currentMoney = moneyOverride;
     const bpWeapons = await computeBackpackWeapons(bp, cached);
     render(cached, cardId, roomId, live, bpWeapons);
     return;
@@ -254,12 +293,13 @@ async function showCard(cardId: string, roomId: string) {
   }
 
   try {
-    const [res, live, bp] = await Promise.all([
+    const [res, live, bp, moneyOverride] = await Promise.all([
       fetch(
         `https://obr.dnd.center/characters/${encodeURIComponent(roomId)}/${encodeURIComponent(cardId)}/data.json`
       ),
       readLiveBubbles(),
       readBackpack(cardId),
+      readMoney(cardId),
     ]);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const d = await res.json();
@@ -267,6 +307,7 @@ async function showCard(cardId: string, roomId: string) {
     if (currentCardId !== cardId) return;
     cardCache.set(cardId, d);
     currentBackpack = bp;
+    currentMoney = moneyOverride;
     const bpWeapons = await computeBackpackWeapons(bp, d);
     render(d, cardId, roomId, live, bpWeapons);
   } catch (e: any) {
@@ -284,7 +325,7 @@ async function readLiveBubbles(): Promise<BubblesData> {
   return readBubbles(boundItemId);
 }
 
-function renderBackpackHTML(): string {
+function renderBackpackHTML(money: number): string {
   const n = currentBackpack.reduce((sum, i) => sum + i.qty, 0);
   const toggleIcon = backpackExpanded ? "▼" : "▶";
 
@@ -313,6 +354,7 @@ function renderBackpackHTML(): string {
   return `<div class="bp-sect">
     <div class="bp-head" id="bp-head">
       <span>🎒 背包<span class="bp-count">(${n})</span></span>
+      <span class="bp-money" id="bp-money"><span class="bp-money-icon">💰</span> <span class="bp-money-val">${formatMoney(money)} GP</span></span>
       <span class="bp-toggle">${toggleIcon}</span>
     </div>
     ${body}
@@ -550,7 +592,7 @@ function render(d: any, cardId: string, roomId: string, live: BubblesData = {}, 
   // the player look up a feature definition without leaving OBR.
   const featuresHtml = renderSearchChips(d);
 
-  const bpHtml = renderBackpackHTML();
+  const bpHtml = renderBackpackHTML(currentMoney ?? computeGpFromCard(d));
 
   root.innerHTML = `
     <div class="hdr">
@@ -797,6 +839,60 @@ function bindBackpackInteractions(): void {
     cleanups.push(() => head.removeEventListener("click", onHeadClick));
   }
 
+  const moneyEl = document.getElementById("bp-money");
+  if (moneyEl && currentCardId) {
+    const moneyValEl = moneyEl.querySelector<HTMLElement>(".bp-money-val");
+    let editStartValue = "";
+
+    const startEdit = () => {
+      if (!moneyValEl) return;
+      editStartValue = moneyValEl.textContent?.replace(/\s*GP\s*$/, "").trim() || "";
+      const currentVal = currentMoney ?? computeGpFromCard(cardCache.get(currentCardId!) ?? {});
+      const input = document.createElement("input");
+      input.type = "text";
+      input.inputMode = "decimal";
+      input.className = "bp-money-input";
+      input.value = String(currentVal);
+      moneyValEl.replaceWith(input);
+      input.focus();
+      input.select();
+
+      const commit = async () => {
+        const raw = input.value.trim();
+        const parsed = parseFloat(raw);
+        if (raw === "" || isNaN(parsed)) {
+          input.replaceWith(moneyValEl);
+          moneyValEl.textContent = editStartValue + " GP";
+          return;
+        }
+        const rounded = Math.round(parsed * 100) / 100;
+        currentMoney = rounded;
+        if (currentCardId) await writeMoney(currentCardId, rounded);
+        doRerender();
+      };
+
+      const cancel = () => {
+        input.replaceWith(moneyValEl);
+        moneyValEl.textContent = editStartValue + " GP";
+      };
+
+      input.addEventListener("keydown", (e: KeyboardEvent) => {
+        if (e.key === "Enter") { e.preventDefault(); input.blur(); }
+        else if (e.key === "Escape") { e.preventDefault(); cancel(); }
+      });
+      input.addEventListener("blur", () => {
+        if (input.parentNode) commit();
+      });
+    };
+
+    const onMoneyClick = (e: Event) => {
+      e.stopPropagation();
+      if (!moneyEl.querySelector(".bp-money-input")) startEdit();
+    };
+    moneyEl.addEventListener("click", onMoneyClick);
+    cleanups.push(() => moneyEl.removeEventListener("click", onMoneyClick));
+  }
+
   document.querySelectorAll<HTMLElement>(".bp-chip").forEach((chip) => {
     const idx = parseInt(chip.dataset.idx ?? "", 10);
     if (isNaN(idx)) return;
@@ -859,10 +955,12 @@ async function doRerender(): Promise<void> {
   if (!currentCardId) return;
   const d = cardCache.get(currentCardId);
   if (!d) return;
-  const [live, bpWeapons] = await Promise.all([
+  const [live, bpWeapons, moneyOverride] = await Promise.all([
     readLiveBubbles(),
     computeBackpackWeapons(currentBackpack, d),
+    readMoney(currentCardId),
   ]);
+  currentMoney = moneyOverride;
   render(d, currentCardId, OBR.room.id || "default", live, bpWeapons);
 }
 

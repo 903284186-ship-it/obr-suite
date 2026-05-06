@@ -495,7 +495,35 @@ html,body{
   user-select:none;
 }
 .bp-head .bp-count{color:#888;font-weight:400;margin-left:4px}
-.bp-head .bp-toggle{margin-left:auto;font-size:8px;color:#888;padding:0 2px}
+.bp-head .bp-toggle{margin-left:4px;font-size:8px;color:#888;padding:0 2px}
+.bp-money{
+  display:inline-flex;align-items:center;gap:3px;
+  margin-left:auto;
+  font-size:9.5px;font-weight:600;
+  color:#d4a843;
+  cursor:pointer;
+  user-select:none;
+  transition:color .12s;
+  white-space:nowrap;
+}
+.bp-money:hover{color:#f0c060}
+.bp-money .bp-money-icon{font-size:10px}
+.bp-money-input{
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(212,168,67,0.5);
+  border-radius:3px;
+  color:#f0c060;
+  font-family:inherit;font-size:9.5px;font-weight:600;
+  width:70px;
+  padding:1px 4px;
+  outline:none;
+  text-align:right;
+  font-variant-numeric:tabular-nums;
+}
+.bp-money-input:focus{
+  border-color:rgba(212,168,67,0.85);
+  background:rgba(255,255,255,0.12);
+}
 .bp-head .bp-add{
   margin-left:6px;font-size:14px;color:#5dade2;cursor:pointer;
   padding:0 4px;line-height:1;
