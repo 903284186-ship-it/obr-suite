@@ -24,9 +24,15 @@ export interface ItemResult {
 function getBases(): string[] {
   try {
     const libs = getState().libraries || [];
+    const seen = new Set<string>();
     const bases = libs
-      .filter((l) => l.enabled && l.baseUrl)
-      .map((l) => l.baseUrl.replace(/\/+$/, ""));
+      .filter((l) => l.enabled && typeof l.baseUrl === "string" && l.baseUrl.trim().length > 0)
+      .map((l) => l.baseUrl.replace(/\/+$/, ""))
+      .filter((b) => {
+        if (seen.has(b)) return false;
+        seen.add(b);
+        return true;
+      });
     return bases.length > 0 ? bases : [DEFAULT_BASE];
   } catch {
     return [DEFAULT_BASE];
