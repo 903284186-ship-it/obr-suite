@@ -1363,7 +1363,6 @@ let isGM = false;
 let currentHits: Entry[] = [];
 let kbdActiveIdx = -1;
 let pinnedEntry: Entry | null = null;
-let activeBackpackCardId: string | null = null;
 let lastHoverEntry: Entry | null = null;
 let collapsedKeepingQuery = false;
 // External callers (e.g. character-card name chips) can request that
@@ -1499,8 +1498,7 @@ async function renderPreviewFor(entry: Entry) {
   const srcDisplay = sourceLabel(code);
 
   const itemCategories = new Set([4, 56, 57]);
-  const showBackpackBtn = itemCategories.has(entry.c) && activeBackpackCardId;
-  const backpackBtn = showBackpackBtn
+  const backpackBtn = itemCategories.has(entry.c)
     ? `<button class="bp-add-btn" id="bp-add-btn" data-name="${escapeHtml(entry.n)}" data-display="${escapeHtml(display)}">＋ 加入背包</button>`
     : "";
 
@@ -1598,13 +1596,29 @@ function refilter() {
 // Delegated click for any 5etools rollable tag inside the search preview.
 previewEl.addEventListener("click", async (e) => {
   const bpBtn = (e.target as HTMLElement | null)?.closest<HTMLElement>(".bp-add-btn");
-  if (bpBtn && activeBackpackCardId) {
+  if (bpBtn) {
     e.preventDefault();
     e.stopPropagation();
     const srdName = bpBtn.dataset.name ?? "";
     const name = bpBtn.dataset.display ?? srdName;
     if (!srdName) return;
-    // Fetch item type for chip coloring
+    // Find the bound cardId from the currently selected token.
+    let cardId: string | null = null;
+    try {
+      const sel = await OBR.player.getSelection();
+      if (sel && sel.length === 1) {
+        const items = await OBR.scene.items.getItems(sel);
+        const meta = (items[0] as any)?.metadata;
+        if (meta?.["com.character-cards/boundCardId"]) {
+          cardId = meta["com.character-cards/boundCardId"] as string;
+        }
+      }
+    } catch {}
+    if (!cardId) {
+      bpBtn.textContent = "⚠ 未选中角色";
+      setTimeout(() => { bpBtn.textContent = "＋ 加入背包"; }, 1500);
+      return;
+    }
     let type = "";
     try {
       const res = await fetch(`${dataBase(getLocalLang())}/data/items.json`, { cache: "force-cache" });
@@ -1618,7 +1632,7 @@ previewEl.addEventListener("click", async (e) => {
     try {
       OBR.broadcast.sendMessage(
         "com.obr-suite/backpack-add-item",
-        { cardId: activeBackpackCardId, srdName, name, type },
+        { cardId, srdName, name, type },
         { destination: "LOCAL" },
       );
     } catch {}
@@ -1674,11 +1688,6 @@ OBR.onReady(() => {
     indexCache = null;
     dataCache.clear();
     dataPending.clear();
-  });
-  // Backpack: store the active cardId when the info panel's + button is clicked.
-  OBR.broadcast.onMessage("com.obr-suite/backpack-open-add", (event) => {
-    const data = (event.data as { cardId?: string } | undefined) ?? {};
-    activeBackpackCardId = typeof data.cardId === "string" ? data.cardId : null;
   });
 });
 

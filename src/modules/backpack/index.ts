@@ -101,7 +101,6 @@ export async function canManageBackpack(cardId: string): Promise<boolean> {
   }
 }
 
-export const BC_BACKPACK_OPEN_ADD = "com.obr-suite/backpack-open-add";
 export const BC_BACKPACK_ADD_ITEM = "com.obr-suite/backpack-add-item";
 
 export function itemTypeToCssClass(type: string): string {

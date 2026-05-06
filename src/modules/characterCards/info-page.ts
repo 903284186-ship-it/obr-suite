@@ -19,7 +19,6 @@ import {
   removeItem,
   transferItem,
   canManageBackpack,
-  BC_BACKPACK_OPEN_ADD,
   BC_BACKPACK_ADD_ITEM,
   itemTypeToCssClass,
 } from "../backpack/index";
@@ -224,7 +223,6 @@ function renderBackpackHTML(): string {
     <div class="bp-head" id="bp-head">
       <span>🎒 背包<span class="bp-count">(${n})</span></span>
       <span class="bp-toggle">${toggleIcon}</span>
-      <span class="bp-add" id="bp-add" title="添加道具">＋</span>
     </div>
     ${body}
   </div>`;
@@ -674,36 +672,17 @@ function bindBackpackInteractions(): void {
   const cleanups: Array<() => void> = [];
 
   const head = document.getElementById("bp-head");
-  const addBtn = document.getElementById("bp-add");
   const transferList = document.getElementById("bp-transfer-list");
   const transferCancel = document.getElementById("bp-transfer-cancel");
 
   if (head) {
     const onHeadClick = async (e: Event) => {
-      const target = e.target as HTMLElement;
-      if (target.closest("#bp-add")) return;
       backpackExpanded = !backpackExpanded;
       showTransferList = false;
       if (currentCardId) doRerender();
     };
     head.addEventListener("click", onHeadClick);
     cleanups.push(() => head.removeEventListener("click", onHeadClick));
-  }
-
-  if (addBtn) {
-    const onAddClick = (e: Event) => {
-      e.stopPropagation();
-      if (!currentCardId) return;
-      try {
-        OBR.broadcast.sendMessage(
-          BC_BACKPACK_OPEN_ADD,
-          { cardId: currentCardId },
-          { destination: "LOCAL" },
-        );
-      } catch {}
-    };
-    addBtn.addEventListener("click", onAddClick);
-    cleanups.push(() => addBtn.removeEventListener("click", onAddClick));
   }
 
   document.querySelectorAll<HTMLElement>(".bp-chip").forEach((chip) => {
@@ -1055,9 +1034,11 @@ OBR.onReady(async () => {
   OBR.broadcast.onMessage(BC_BACKPACK_ADD_ITEM, async (ev: any) => {
     const data = ev?.data as { cardId?: string; srdName?: string; name?: string; type?: string } | undefined;
     if (!data?.cardId || !data?.srdName || !data?.name) return;
-    if (data.cardId !== currentCardId) return;
     const entry: BackpackEntry = { srdName: data.srdName, name: data.name, type: data.type ?? "", qty: 1 };
-    currentBackpack = await addItem(data.cardId, entry);
-    doRerender();
+    await addItem(data.cardId, entry);
+    if (data.cardId === currentCardId) {
+      currentBackpack = await readBackpack(currentCardId);
+      doRerender();
+    }
   });
 });
