@@ -180,7 +180,6 @@ async function openPanel(expanded: boolean) {
     const vw = await OBR.viewport.getWidth();
     const userOff = getPanelOffset(PANEL_IDS.initiative);
     await OBR.popover.open({
-      anchorReference: "POSITION",
       id: POPOVER_ID,
       url: `${PANEL_URL}?expanded=${expanded ? 1 : 0}`,
       width,

@@ -94,7 +94,6 @@ async function openPopoverFor(itemId: string): Promise<void> {
   const anchor = await popoverAnchor();
   try {
     await OBR.popover.open({
-      anchorReference: "POSITION",
       id: POPOVER_ID,
       url: `${POPOVER_URL}?itemId=${encodeURIComponent(itemId)}`,
       width: POPOVER_W,

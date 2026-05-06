@@ -155,7 +155,6 @@ async function openInfoPopoverFor(cardId: string, roomId: string, itemId: string
       )}${itemParam}`,
       width: w,
       height: h,
-      anchorReference: "POSITION",
       anchorPosition: {
         left: vw - RIGHT_OFFSET + userOff.dx,
         top: anchorTop + userOff.dy,
