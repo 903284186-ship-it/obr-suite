@@ -277,6 +277,7 @@ async function openHistoryTrigger(): Promise<void> {
       url: `${HISTORY_TRIGGER_URL}?side=${side}`,
       width: HISTORY_TRIGGER_W,
       height: HISTORY_TRIGGER_H,
+      anchorReference: "POSITION",
       anchorPosition: {
         left: vw - HISTORY_TRIGGER_RIGHT_OFFSET + userOff.dx,
         top: vh - HISTORY_TRIGGER_BOTTOM_OFFSET + userOff.dy,
@@ -341,6 +342,7 @@ async function openHistory(mode: "transient" | "all" = "transient"): Promise<voi
       url: `${HISTORY_URL}?mode=${mode}`,
       width: w,
       height: h,
+      anchorReference: "POSITION",
       anchorPosition: { left: anchorRight, top: anchorTop },
       anchorOrigin: { horizontal: "RIGHT", vertical: "BOTTOM" },
       transformOrigin: { horizontal: "RIGHT", vertical: "BOTTOM" },

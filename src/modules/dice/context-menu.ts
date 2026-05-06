@@ -67,6 +67,7 @@ async function openMenuPopoverAt(
     url: `${URL}?${params.toString()}`,
     width: POPOVER_W,
     height: POPOVER_H,
+    anchorReference: "POSITION",
     anchorPosition: { left: Math.round(left), top: Math.round(top) },
     anchorOrigin: { horizontal: "LEFT", vertical: "TOP" },
     transformOrigin: { horizontal: "LEFT", vertical: "TOP" },

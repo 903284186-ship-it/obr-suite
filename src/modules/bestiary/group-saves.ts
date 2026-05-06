@@ -189,6 +189,7 @@ async function openPopover(): Promise<void> {
       url: POPOVER_URL,
       width: POPOVER_WIDTH,
       height: POPOVER_HEIGHT,
+      anchorReference: "POSITION",
       anchorPosition: { left: Math.round(vw / 2), top: TOP_OFFSET },
       anchorOrigin: { horizontal: "CENTER", vertical: "TOP" },
       transformOrigin: { horizontal: "CENTER", vertical: "TOP" },

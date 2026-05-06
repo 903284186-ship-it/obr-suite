@@ -98,6 +98,7 @@ async function openPopoverFor(itemId: string): Promise<void> {
       url: `${POPOVER_URL}?itemId=${encodeURIComponent(itemId)}`,
       width: POPOVER_W,
       height: POPOVER_H,
+      anchorReference: "POSITION",
       anchorPosition: anchor,
       anchorOrigin: { horizontal: "LEFT", vertical: "TOP" },
       transformOrigin: { horizontal: "LEFT", vertical: "TOP" },

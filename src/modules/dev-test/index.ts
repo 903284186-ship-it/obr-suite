@@ -126,6 +126,7 @@ async function openAt(corner: Corner): Promise<void> {
     url: PANEL_URL,
     width: PANEL_W,
     height: PANEL_H,
+    anchorReference: "POSITION",
     anchorPosition: spec.anchorPosition,
     anchorOrigin: spec.anchorOrigin,
     transformOrigin: spec.transformOrigin,

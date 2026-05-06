@@ -157,6 +157,7 @@ async function openPanel() {
       url: POPOVER_URL,
       width: w,
       height: h,
+      anchorReference: "POSITION",
       anchorPosition: {
         left: vw - RIGHT_OFFSET + userOff.dx,
         top: TOP_OFFSET + userOff.dy,
@@ -191,6 +192,7 @@ async function openInfoPopoverFor(slug: string, itemId: string | null) {
       url: `${INFO_URL}?slug=${encodeURIComponent(slug)}${itemQ}`,
       width: w,
       height: h,
+      anchorReference: "POSITION",
       anchorPosition: {
         left: vw - INFO_RIGHT_OFFSET + userOff.dx,
         top: INFO_TOP_OFFSET + userOff.dy,
