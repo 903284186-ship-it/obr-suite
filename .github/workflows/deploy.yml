@@ -28,7 +28,7 @@ jobs:
       - run: npm ci
       - run: npm run build
 
-      - name: Create suite/ subdirectory for /suite/ path compatibility
+      - name: Mirror dist contents into suite/ subdirectory
         run: |
           mkdir -p dist/suite
           for item in dist/*; do
