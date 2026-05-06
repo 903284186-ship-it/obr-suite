@@ -828,9 +828,13 @@ async function findEntryData(entry: Entry): Promise<DataEntry | null> {
     const cp = found._copy;
     const parentName = (cp.ENG_name || cp.name || "")?.toLowerCase();
     if (parentName) {
-      // Try local array first
-      let parent = arr.find((e) => (e.ENG_name || e.name || "").toLowerCase() === parentName);
-      // Fallback: re-fetch full items.json to find the base entry
+      // Look for base entry: matches parent name AND isn't the found entry
+      // itself (found may have ENG_name === parentName but is the _copy stub).
+      const isParent = (e: any) =>
+        e !== found &&
+        (e.ENG_name || e.name || "").toLowerCase() === parentName &&
+        !e._copy;
+      let parent = arr.find(isParent);
       if (!parent) {
         try {
           const base = dataBase(getLocalLang());
@@ -838,8 +842,7 @@ async function findEntryData(entry: Entry): Promise<DataEntry | null> {
           if (res.ok) {
             const raw = await res.json();
             const pool = Array.isArray(raw) ? raw : (raw.item ?? []);
-            parent = pool.find((e: any) =>
-              (e.ENG_name || e.name || "").toLowerCase() === parentName);
+            parent = pool.find((e: any) => isParent(e));
           }
         } catch {}
       }
