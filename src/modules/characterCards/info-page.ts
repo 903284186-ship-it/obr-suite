@@ -55,6 +55,95 @@ function fmtMod(n: unknown): string {
   return n >= 0 ? `+${n}` : `${n}`;
 }
 
+// Backpack weapon helpers — same DMGTYPE/WPROP mapping as fullscreen-page
+const DMGTYPE_ZH: Record<string, string> = {
+  A: "酸", B: "钝击", C: "冷冻", F: "火焰", FORCE: "力场", "F_": "力场",
+  L: "闪电", N: "死灵", P: "穿刺", POISON: "毒素", PSY: "心灵",
+  RAD: "光耀", S: "挥砍", T: "雷鸣",
+};
+const WPROP_ZH: Record<string, string> = {
+  V: "多用", F: "灵巧", L: "轻型", H: "重型", "2H": "双手",
+  T: "投掷", RLD: "装填", AF: "弹药", BF: "连射", S: "特殊", R: "触及",
+};
+let weaponDetailCache: any[] | null = null;
+let weaponDetailPending: Promise<any[]> | null = null;
+
+async function loadWeaponDetails(): Promise<any[]> {
+  if (weaponDetailCache) return weaponDetailCache;
+  if (weaponDetailPending) return weaponDetailPending;
+  weaponDetailPending = (async () => {
+    const base = "https://5e.kiwee.top";
+    const [itemsRes, baseRes] = await Promise.all([
+      fetch(`${base}/data/items.json`, { cache: "force-cache" }),
+      fetch(`${base}/data/items-base.json`, { cache: "force-cache" }),
+    ]);
+    const pool: any[] = [];
+    if (itemsRes.ok) {
+      const j = await itemsRes.json();
+      pool.push(...(Array.isArray(j) ? j : (j.item || [])));
+    }
+    if (baseRes.ok) {
+      const j = await baseRes.json();
+      pool.push(...(j.baseitem || []));
+    }
+    weaponDetailCache = pool;
+    return pool;
+  })();
+  return weaponDetailPending;
+}
+
+async function computeBackpackWeapons(bp: BackpackData, d: any): Promise<any[]> {
+  const weaponTypes = bp.filter((e) => {
+    const t = (e.type || "").toUpperCase().split("|")[0];
+    return t === "M" || t === "R";
+  });
+  if (weaponTypes.length === 0) return [];
+
+  const pool = await loadWeaponDetails();
+  const abilities = d.abilities || {};
+  const str = Number(abilities.str?.score ?? 10);
+  const dex = Number(abilities.dex?.score ?? 10);
+  const lvl = d.total_level ?? 1;
+  const pBonus = Math.ceil(lvl / 4) + 1;
+
+  return weaponTypes.map((entry) => {
+    const detail = pool.find((it: any) =>
+      it.name === entry.name || it.ENG_name === entry.srdName,
+    );
+    if (!detail) return null;
+    const propsArr: string[] = Array.isArray(detail.property) ? detail.property.map((p: any) => String(p)) : [];
+    let isFinesse = false, isRanged = false;
+    const propLabels: string[] = [];
+    for (const p of propsArr) {
+      const base = p.split("|")[0];
+      if (base === "F") isFinesse = true;
+      if (base === "AF" || base === "RLD" || base === "T") isRanged = true;
+      const zh = WPROP_ZH[base];
+      if (zh && !propLabels.includes(zh)) propLabels.push(zh);
+    }
+    const rawType = (detail.type || "").toUpperCase().split("|")[0];
+    const tIsMelee = rawType === "M";
+    const tIsRanged = rawType === "R" || isRanged || !!detail.range;
+    let atkMod: number;
+    if (tIsRanged && !tIsMelee) {
+      atkMod = Math.floor((dex - 10) / 2) + pBonus;
+    } else if (isFinesse) {
+      atkMod = Math.max(Math.floor((str - 10) / 2), Math.floor((dex - 10) / 2)) + pBonus;
+    } else {
+      atkMod = Math.floor((str - 10) / 2) + pBonus;
+    }
+    return {
+      name: detail.name || entry.name,
+      atkMod,
+      damage: String(detail.dmg1 || ""),
+      damage_type: DMGTYPE_ZH[String(detail.dmgType || "").toUpperCase()] || "",
+      extra_damage: detail.dmg2 ? String(detail.dmg2) : null,
+      properties: propLabels.join(" · "),
+      weight: detail.weight ?? null,
+    };
+  }).filter(Boolean);
+}
+
 // attack_bonus is either "+3" (weapons) or "D20+7" (spells). Normalise to
 // just the signed bonus like "+7".
 function extractBonus(s: unknown): string {
@@ -151,7 +240,8 @@ async function showCard(cardId: string, roomId: string) {
   if (cached) {
     const [live, bp] = await Promise.all([readLiveBubbles(), readBackpack(cardId)]);
     currentBackpack = bp;
-    render(cached, cardId, roomId, live);
+    const bpWeapons = await computeBackpackWeapons(bp, cached);
+    render(cached, cardId, roomId, live, bpWeapons);
     return;
   }
 
@@ -177,7 +267,8 @@ async function showCard(cardId: string, roomId: string) {
     if (currentCardId !== cardId) return;
     cardCache.set(cardId, d);
     currentBackpack = bp;
-    render(d, cardId, roomId, live);
+    const bpWeapons = await computeBackpackWeapons(bp, d);
+    render(d, cardId, roomId, live, bpWeapons);
   } catch (e: any) {
     if (currentCardId !== cardId) return;
     root.innerHTML = `<div class="err">加载失败：${escapeHtml(e?.message ?? e)}</div>`;
@@ -228,7 +319,7 @@ function renderBackpackHTML(): string {
   </div>`;
 }
 
-function render(d: any, cardId: string, roomId: string, live: BubblesData = {}) {
+function render(d: any, cardId: string, roomId: string, live: BubblesData = {}, bpWeapons: any[] = []) {
   const id = d.identity || {};
   const cs = d.core_stats || {};
   const ab = d.abilities || {};
@@ -425,6 +516,27 @@ function render(d: any, cardId: string, roomId: string, live: BubblesData = {}) 
         <span class="atk rollable" data-expr="${atkExpr}" data-label="${escapeHtml(atkLbl)}" title="${escapeHtml(atkLbl)} ${atkExpr}">${escapeHtml(w.attack_bonus ?? "?")}</span>
         <span class="dmg">${dmgClickable}${extraHtml}</span>
         ${prop}
+      </div>`);
+    }
+  }
+
+  // Backpack weapons — auto-resolved from backpack items with type M/R
+  if (bpWeapons.length > 0) {
+    weaponRows.push(`<div class="bp-weps-sep">背包武器</div>`);
+    for (const w of bpWeapons) {
+      const atkExpr = `1d20${w.atkMod >= 0 ? "+" : ""}${w.atkMod}`;
+      const atkLbl = `${w.name} 命中`;
+      const dmgLbl = `${w.name} 伤害${w.damage_type ? `(${w.damage_type})` : ""}`;
+      let extraHtml = "";
+      if (w.extra_damage) {
+        const extraLbl = `${w.name} 双手伤害`;
+        extraHtml = ` <span class="dmg-extra rollable" data-expr="${escapeHtml(w.extra_damage)}" data-label="${escapeHtml(extraLbl)}" title="${escapeHtml(extraLbl)} ${escapeHtml(w.extra_damage)}">+${escapeHtml(w.extra_damage)} 双手</span>`;
+      }
+      weaponRows.push(`<div class="wp bp-wep">
+        <span class="n">${escapeHtml(w.name)}</span>
+        <span class="atk rollable" data-expr="${atkExpr}" data-label="${escapeHtml(atkLbl)}" title="${escapeHtml(atkLbl)} ${atkExpr}">${fmtMod(w.atkMod)}</span>
+        <span class="dmg"><span class="rollable" data-expr="${escapeHtml(w.damage)}" data-label="${escapeHtml(dmgLbl)}" title="${dmgLbl} ${escapeHtml(w.damage)}">${escapeHtml(w.damage)}${w.damage_type ? ` ${escapeHtml(w.damage_type)}` : ""}</span>${extraHtml}</span>
+        ${w.properties ? `<span class="prop-row">${escapeHtml(w.properties)}${w.weight != null ? ` · ${w.weight}磅` : ""}</span>` : ""}
       </div>`);
     }
   }
