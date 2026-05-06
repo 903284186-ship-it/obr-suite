@@ -12,6 +12,21 @@ import {
   clampStat,
   type BubblesData,
 } from "../../utils/statEdit";
+import {
+  readBackpack,
+  writeBackpack,
+  addItem,
+  removeItem,
+  transferItem,
+  canManageBackpack,
+} from "../backpack/index";
+import type { BackpackData, BackpackEntry } from "../backpack/types";
+import {
+  getItemIndex,
+  searchItems,
+  itemTypeToCssClass,
+} from "../backpack/itemSearch";
+import { getState } from "../../state";
 
 const SHOW_MSG = "com.character-cards/info-show";
 
@@ -121,6 +136,13 @@ function classesStr(d: any): string {
 let currentCardId: string | null = null;
 const cardCache = new Map<string, any>();
 
+let currentBackpack: BackpackData = { items: [] };
+let backpackExpanded = true;
+let showItemSearch = false;
+let showTransferList = false;
+let transferItemName: string | null = null;
+let transferCandidates: Array<{ cardId: string; tokenId: string; name: string }> = [];
+
 // Cached role lookup. The DM-only lock button at the right end of the
 // stat banner reads this. OBR.onReady below populates it before any
 // showCard runs, so the very first render already has the right value.
@@ -132,7 +154,8 @@ async function showCard(cardId: string, roomId: string) {
   // Cache hit: render instantly, 0 network wait, 0 intermediate frame.
   const cached = cardCache.get(cardId);
   if (cached) {
-    const live = await readLiveBubbles();
+    const [live, bp] = await Promise.all([readLiveBubbles(), readBackpack(cardId)]);
+    currentBackpack = bp;
     render(cached, cardId, roomId, live);
     return;
   }
@@ -146,17 +169,19 @@ async function showCard(cardId: string, roomId: string) {
   }
 
   try {
-    const [res, live] = await Promise.all([
+    const [res, live, bp] = await Promise.all([
       fetch(
         `https://obr.dnd.center/characters/${encodeURIComponent(roomId)}/${encodeURIComponent(cardId)}/data.json`
       ),
       readLiveBubbles(),
+      readBackpack(cardId),
     ]);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const d = await res.json();
     // If user switched cards between fetch start and end, ignore.
     if (currentCardId !== cardId) return;
     cardCache.set(cardId, d);
+    currentBackpack = bp;
     render(d, cardId, roomId, live);
   } catch (e: any) {
     if (currentCardId !== cardId) return;
@@ -171,6 +196,47 @@ async function showCard(cardId: string, roomId: string) {
 async function readLiveBubbles(): Promise<BubblesData> {
   if (!boundItemId) return {};
   return readBubbles(boundItemId);
+}
+
+function renderBackpackHTML(): string {
+  const n = currentBackpack.items.reduce((sum, i) => sum + i.qty, 0);
+  const toggleIcon = backpackExpanded ? "▼" : "▶";
+
+  let body = "";
+  if (showItemSearch) {
+    body = `<div class="bp-search">
+      <input class="bp-search-input" id="bp-search-input" type="text" placeholder="搜索 SRD 装备...">
+      <div class="bp-results" id="bp-results"></div>
+    </div>`;
+  } else if (showTransferList && transferItemName) {
+    const opts = transferCandidates.length > 0
+      ? transferCandidates.map((c) =>
+          `<div class="bp-transfer-opt" data-card="${escapeHtml(c.cardId)}">${escapeHtml(c.name)}</div>`
+        ).join("")
+      : `<div class="empty">没有可转移的角色</div>`;
+    body = `<div class="bp-transfer-list" id="bp-transfer-list">
+      ${opts}
+      <div class="bp-transfer-cancel" id="bp-transfer-cancel">取消</div>
+    </div>`;
+  } else if (backpackExpanded && currentBackpack.items.length > 0) {
+    const chips = currentBackpack.items.map((entry, i) => {
+      const cls = itemTypeToCssClass(entry.type);
+      const label = entry.qty > 1 ? `${escapeHtml(entry.name)} ×${entry.qty}` : escapeHtml(entry.name);
+      return `<span class="bp-chip ${cls}" data-idx="${i}" title="${escapeHtml(entry.name)}">${label}</span>`;
+    }).join("");
+    body = `<div class="bp-grid">${chips}</div>`;
+  } else if (backpackExpanded && currentBackpack.items.length === 0) {
+    body = `<div class="empty" style="padding:2px 6px;font-size:10px;">空</div>`;
+  }
+
+  return `<div class="bp-sect">
+    <div class="bp-head" id="bp-head">
+      <span>🎒 背包<span class="bp-count">(${n})</span></span>
+      <span class="bp-toggle">${toggleIcon}</span>
+      <span class="bp-add" id="bp-add" title="添加道具">＋</span>
+    </div>
+    ${body}
+  </div>`;
 }
 
 function render(d: any, cardId: string, roomId: string, live: BubblesData = {}) {
@@ -383,6 +449,8 @@ function render(d: any, cardId: string, roomId: string, live: BubblesData = {}) 
   // the player look up a feature definition without leaving OBR.
   const featuresHtml = renderSearchChips(d);
 
+  const bpHtml = renderBackpackHTML();
+
   root.innerHTML = `
     <div class="hdr">
       <div class="drag-handle" id="drag-handle" title="拖动 / Drag" aria-label="拖动面板">
@@ -405,8 +473,10 @@ function render(d: any, cardId: string, roomId: string, live: BubblesData = {}) 
     <div class="sect">${ICONS.swords} 武器 / 攻击</div>
     ${weps}
     ${featuresHtml}
+    ${bpHtml}
   `;
   bindStatRowInputs();
+  bindBackpackInteractions();
   // The drag handle DOM element is recreated on every render() (we
   // assigned root.innerHTML), so the existing pointer-event bindings
   // on the previous element are gone. Re-bind for the new node.
@@ -586,6 +656,264 @@ function bindStatRowInputs(): void {
       }
       if (text !== editStart) void commit();
     });
+  });
+}
+
+async function loadTransferCandidates(excludeCardId: string): Promise<void> {
+  transferCandidates = [];
+  try {
+    const items = await OBR.scene.items.getItems();
+    for (const it of items) {
+      const cardId = (it as any).metadata?.["com.character-cards/boundCardId"];
+      if (typeof cardId === "string" && cardId !== excludeCardId) {
+        transferCandidates.push({
+          cardId,
+          tokenId: it.id,
+          name: (it as any).text?.plainText ?? (it as any).text ?? it.id,
+        });
+      }
+    }
+  } catch {}
+}
+
+let currentBpCleanup: (() => void) | null = null;
+
+function bindBackpackInteractions(): void {
+  if (currentBpCleanup) currentBpCleanup();
+  const cleanups: Array<() => void> = [];
+
+  const head = document.getElementById("bp-head");
+  const addBtn = document.getElementById("bp-add");
+  const searchInput = document.getElementById("bp-search-input") as HTMLInputElement | null;
+  const resultsEl = document.getElementById("bp-results");
+  const transferList = document.getElementById("bp-transfer-list");
+  const transferCancel = document.getElementById("bp-transfer-cancel");
+
+  if (head) {
+    const onHeadClick = async (e: Event) => {
+      const target = e.target as HTMLElement;
+      if (target.closest("#bp-add")) return;
+      backpackExpanded = !backpackExpanded;
+      showItemSearch = false;
+      showTransferList = false;
+      if (currentCardId) doRerender();
+    };
+    head.addEventListener("click", onHeadClick);
+    cleanups.push(() => head.removeEventListener("click", onHeadClick));
+  }
+
+  if (addBtn) {
+    const onAddClick = async (e: Event) => {
+      e.stopPropagation();
+      showItemSearch = !showItemSearch;
+      showTransferList = false;
+      if (currentCardId) {
+        doRerender();
+        if (showItemSearch) {
+          requestAnimationFrame(() => {
+            document.getElementById("bp-search-input")?.focus();
+          });
+        }
+      }
+    };
+    addBtn.addEventListener("click", onAddClick);
+    cleanups.push(() => addBtn.removeEventListener("click", onAddClick));
+  }
+
+  if (searchInput) {
+    let timer: ReturnType<typeof setTimeout>;
+    const onSearchInput = () => {
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        const q = searchInput.value.trim();
+        if (!q) { if (resultsEl) resultsEl.innerHTML = ""; return; }
+        const idx = await getItemIndex();
+        const results = searchItems(idx, q, 15);
+        if (resultsEl) {
+          resultsEl.innerHTML = results.map((r) =>
+            `<div class="bp-result" data-name="${escapeHtml(r.name)}">
+              <span>${escapeHtml(r.name)}</span>
+              <span class="bp-r-type">物品</span>
+            </div>`
+          ).join("");
+        }
+      }, 150);
+    };
+    searchInput.addEventListener("input", onSearchInput);
+    cleanups.push(() => searchInput.removeEventListener("input", onSearchInput));
+  }
+
+  if (resultsEl) {
+    const onResultClick = async (e: Event) => {
+      const el = (e.target as HTMLElement).closest<HTMLElement>(".bp-result");
+      if (!el || !currentCardId) return;
+      const name = el.dataset.name;
+      if (!name) return;
+      const entry: BackpackEntry = { srdName: name, name, type: "", qty: 1 };
+      try {
+        const libs = getState().libraries || [];
+        const base = libs.length > 0 ? libs[0].baseUrl : "https://5e.kiwee.top";
+        const res = await fetch(`${base}/data/items.json`, { cache: "force-cache" });
+        if (res.ok) {
+          const data = await res.json();
+          const arr = Array.isArray(data) ? data : (data.item ?? []);
+          const found = arr.find((it: any) => it.name === name);
+          if (found?.type) entry.type = String(found.type);
+        }
+      } catch {}
+      currentBackpack = await addItem(currentCardId, entry);
+      showItemSearch = false;
+      doRerender();
+    };
+    resultsEl.addEventListener("click", onResultClick);
+    cleanups.push(() => resultsEl.removeEventListener("click", onResultClick));
+  }
+
+  document.querySelectorAll<HTMLElement>(".bp-chip").forEach((chip) => {
+    const idx = parseInt(chip.dataset.idx ?? "", 10);
+    if (isNaN(idx)) return;
+    const onClick = async () => {
+      const item = currentBackpack.items[idx];
+      if (!item) return;
+      try {
+        OBR.broadcast.sendMessage(
+          "com.obr-suite/search-query",
+          { q: item.srdName, autoPin: true },
+          { destination: "LOCAL" },
+        );
+      } catch {}
+    };
+    const onCtx = async (e: Event) => {
+      e.preventDefault();
+      const item = currentBackpack.items[idx];
+      if (!item || !currentCardId) return;
+      if (!(await canManageBackpack(currentCardId))) return;
+      showContextMenu(e as MouseEvent, item.srdName, item.name, item.qty, idx);
+    };
+    chip.addEventListener("click", onClick);
+    chip.addEventListener("contextmenu", onCtx);
+    cleanups.push(() => {
+      chip.removeEventListener("click", onClick);
+      chip.removeEventListener("contextmenu", onCtx);
+    });
+  });
+
+  if (transferList) {
+    transferList.querySelectorAll<HTMLElement>(".bp-transfer-opt").forEach((opt) => {
+      const onOptClick = async () => {
+        const targetCardId = opt.dataset.card;
+        if (!targetCardId || !currentCardId || !transferItemName) return;
+        await transferItem(currentCardId, targetCardId, transferItemName);
+        currentBackpack = await readBackpack(currentCardId);
+        showTransferList = false;
+        transferItemName = null;
+        doRerender();
+      };
+      opt.addEventListener("click", onOptClick);
+      cleanups.push(() => opt.removeEventListener("click", onOptClick));
+    });
+  }
+
+  if (transferCancel) {
+    const onCancel = () => {
+      showTransferList = false;
+      transferItemName = null;
+      doRerender();
+    };
+    transferCancel.addEventListener("click", onCancel);
+    cleanups.push(() => transferCancel.removeEventListener("click", onCancel));
+  }
+
+  currentBpCleanup = () => cleanups.forEach((f) => f());
+}
+
+async function doRerender(): Promise<void> {
+  if (!currentCardId) return;
+  const d = cardCache.get(currentCardId);
+  if (!d) return;
+  const live = await readLiveBubbles();
+  render(d, currentCardId, OBR.room.id || "default", live);
+}
+
+async function doRemoveItem(idx: number): Promise<void> {
+  if (!currentCardId) return;
+  const item = currentBackpack.items[idx];
+  if (!item) return;
+  currentBackpack = await removeItem(currentCardId, item.srdName);
+  doRerender();
+}
+
+async function doUpdateItemQty(idx: number, qty: number): Promise<void> {
+  if (!currentCardId) return;
+  const item = currentBackpack.items[idx];
+  if (!item) return;
+  if (qty <= 0) {
+    currentBackpack = await removeItem(currentCardId, item.srdName);
+  } else {
+    item.qty = qty;
+    await writeBackpack(currentCardId, currentBackpack);
+  }
+  doRerender();
+}
+
+function showContextMenu(e: MouseEvent, srdName: string, name: string, qty: number, idx: number): void {
+  const menu = document.createElement("div");
+  menu.style.cssText =
+    "position:fixed;z-index:9999;background:#1e1e3a;border:1px solid #444;border-radius:6px;" +
+    "padding:4px 0;min-width:140px;box-shadow:0 4px 16px rgba(0,0,0,0.5);font-size:11px;";
+  menu.style.left = e.clientX + "px";
+  menu.style.top = e.clientY + "px";
+
+  const addRow = (label: string, action: () => void) => {
+    const row = document.createElement("div");
+    row.textContent = label;
+    row.style.cssText =
+      "padding:5px 12px;color:#ccc;cursor:pointer;white-space:nowrap;";
+    row.addEventListener("mouseenter", () => { row.style.background = "rgba(93,173,226,0.18)"; row.style.color = "#fff"; });
+    row.addEventListener("mouseleave", () => { row.style.background = ""; row.style.color = "#ccc"; });
+    row.addEventListener("click", () => { cleanup(); action(); });
+    menu.appendChild(row);
+  };
+
+  addRow("\u{1F4CB} 查看详情", () => {
+    try {
+      OBR.broadcast.sendMessage(
+        "com.obr-suite/search-query",
+        { q: srdName, autoPin: true },
+        { destination: "LOCAL" },
+      );
+    } catch {}
+  });
+  addRow("\u{27A1}\u{FE0F} 转移给...", async () => {
+    transferItemName = srdName;
+    if (currentCardId) await loadTransferCandidates(currentCardId);
+    showTransferList = true;
+    doRerender();
+  });
+  addRow("\u{1F522} 修改数量", () => {
+    const newQty = prompt(`修改 ${name} 数量:`, String(qty));
+    if (newQty !== null && !isNaN(Number(newQty)) && Number(newQty) > 0) {
+      doUpdateItemQty(idx, Number(newQty));
+    }
+  });
+  addRow("\u{1F5D1}\u{FE0F} 丢弃", () => {
+    if (confirm(`确定丢弃 ${name}？`)) {
+      doRemoveItem(idx);
+    }
+  });
+
+  document.body.appendChild(menu);
+  const cleanup = () => {
+    menu.remove();
+    document.removeEventListener("click", onOutside, true);
+    document.removeEventListener("contextmenu", onOutside, true);
+  };
+  const onOutside = (ev: MouseEvent) => {
+    if (!menu.contains(ev.target as Node)) cleanup();
+  };
+  requestAnimationFrame(() => {
+    document.addEventListener("click", onOutside, true);
+    document.addEventListener("contextmenu", onOutside, true);
   });
 }
 
@@ -777,6 +1105,11 @@ OBR.onReady(async () => {
     // different character should make rolls anchor on the new token).
     if (typeof p.itemId === "string") boundItemId = p.itemId;
     else if (p.itemId === null) boundItemId = null;
-    if (p.cardId && p.roomId) showCard(String(p.cardId), String(p.roomId));
+    if (p.cardId && p.roomId) {
+      showItemSearch = false;
+      showTransferList = false;
+      transferItemName = null;
+      showCard(String(p.cardId), String(p.roomId));
+    }
   });
 });
