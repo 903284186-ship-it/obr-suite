@@ -17,7 +17,7 @@ export async function readBackpack(cardId: string): Promise<BackpackData> {
 export async function writeBackpack(cardId: string, data: BackpackData): Promise<void> {
   try {
     const key = backpackKey(cardId);
-    await OBR.room.setMetadata({ [key]: data.length > 0 ? data : undefined });
+    await OBR.room.setMetadata({ [key]: data });
   } catch (e) {
     console.warn("[backpack] writeBackpack failed", e);
   }
