@@ -859,8 +859,11 @@ async function doRerender(): Promise<void> {
   if (!currentCardId) return;
   const d = cardCache.get(currentCardId);
   if (!d) return;
-  const live = await readLiveBubbles();
-  render(d, currentCardId, OBR.room.id || "default", live);
+  const [live, bpWeapons] = await Promise.all([
+    readLiveBubbles(),
+    computeBackpackWeapons(currentBackpack, d),
+  ]);
+  render(d, currentCardId, OBR.room.id || "default", live, bpWeapons);
 }
 
 async function doRemoveItem(idx: number): Promise<void> {
