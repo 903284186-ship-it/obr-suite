@@ -266,7 +266,6 @@ async function emitSideHint(panelId: string): Promise<"left" | "right"> {
 
 async function openHistoryTrigger(): Promise<void> {
   try {
-    if (historyTriggerOpen) await closeHistoryTrigger();
     const [vw, vh] = await Promise.all([
       OBR.viewport.getWidth(),
       OBR.viewport.getHeight(),
@@ -309,8 +308,10 @@ function broadcastHistoryState(open: boolean): void {
 }
 
 async function openHistory(mode: "transient" | "all" = "transient"): Promise<void> {
+  // Re-entrancy: re-anchor on viewport resize / drag-end / reset all
+  // call this with `historyOpen=true` already, expecting the function
+  // to update the popover in place. Don't bail on already-open.
   try {
-    if (historyOpen) await closeHistory();
     const [vw, vh] = await Promise.all([
       OBR.viewport.getWidth(),
       OBR.viewport.getHeight(),

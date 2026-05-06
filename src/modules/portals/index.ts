@@ -1347,7 +1347,6 @@ export async function setupPortals(): Promise<void> {
       const id = currentEditId;
       editPopoverOpen = false;
       currentEditId = null;
-      try { await OBR.popover.close(EDIT_POPOVER_ID); } catch {}
       await openEditPopover(id, false);
     }),
   );
@@ -1357,7 +1356,6 @@ export async function setupPortals(): Promise<void> {
       const id = currentEditId;
       editPopoverOpen = false;
       currentEditId = null;
-      try { await OBR.popover.close(EDIT_POPOVER_ID); } catch {}
       await openEditPopover(id, false);
     }),
   );
