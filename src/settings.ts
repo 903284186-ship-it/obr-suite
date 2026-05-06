@@ -2348,6 +2348,7 @@ function moduleLabelKey(id: ModuleId): string {
     case "portals": return lang === "zh" ? "传送门" : "Portals";
     case "bubbles": return lang === "zh" ? "血量气泡" : "HP Bubbles";
     case "statusTracker": return lang === "zh" ? "状态追踪" : "Status Tracker";
+    default: return id;
   }
 }
 

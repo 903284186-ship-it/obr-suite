@@ -316,7 +316,7 @@ export function formatTagsClickable(s: string): string {
         ? `${parsed.spec.label} ${parsed.spec.expression}`
         : parsed.spec.expression;
       out += `<span class="rollable" data-expr="${exprAttr}" data-label="${labelAttr}" title="${escapeAttr(title)}">${escapeHtml(parsed.spec.display)}</span>`;
-    } else {
+    } else if (parsed.kind === "text") {
       out += escapeHtml(parsed.display);
     }
     i = re.lastIndex;

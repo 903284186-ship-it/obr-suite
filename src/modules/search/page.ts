@@ -317,6 +317,7 @@ async function loadIndex(): Promise<IndexFile> {
     // chips need them to resolve. Best-effort — first library that
     // 200s wins.
     try {
+      const bases = getEnabledLibraryBases();
       for (const base of bases) {
         try {
           const r = await fetch(`${base}/data/items-base.json`, { cache: "no-cache" });
@@ -507,7 +508,7 @@ async function loadCategoryData(
   // candidates and merge whichever 200s.
   const filePathsForSrc = (s: string) => "fileBySource" in cat.data!
     ? [cat.data!.fileBySource(s)]
-    : [cat.data!.file];
+    : [(cat.data as { file: string }).file];
   const candidatePaths = new Set<string>([
     ...filePathsForSrc(src),                  // lowercase
     ...filePathsForSrc(srcOriginal),          // original case
