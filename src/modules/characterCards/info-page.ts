@@ -740,7 +740,10 @@ function bindBackpackInteractions(): void {
       }, 150);
     };
     searchInput.addEventListener("input", onSearchInput);
-    cleanups.push(() => searchInput.removeEventListener("input", onSearchInput));
+    cleanups.push(() => {
+      clearTimeout(timer);
+      searchInput.removeEventListener("input", onSearchInput);
+    });
   }
 
   if (resultsEl) {
@@ -850,8 +853,11 @@ async function doUpdateItemQty(idx: number, qty: number): Promise<void> {
   if (qty <= 0) {
     currentBackpack = await removeItem(currentCardId, item.srdName);
   } else {
-    item.qty = qty;
-    await writeBackpack(currentCardId, currentBackpack);
+    const bp = await readBackpack(currentCardId);
+    const target = bp.items.find((i) => i.srdName === item.srdName);
+    if (target) target.qty = qty;
+    await writeBackpack(currentCardId, bp);
+    currentBackpack = bp;
   }
   doRerender();
 }
@@ -861,8 +867,8 @@ function showContextMenu(e: MouseEvent, srdName: string, name: string, qty: numb
   menu.style.cssText =
     "position:fixed;z-index:9999;background:#1e1e3a;border:1px solid #444;border-radius:6px;" +
     "padding:4px 0;min-width:140px;box-shadow:0 4px 16px rgba(0,0,0,0.5);font-size:11px;";
-  menu.style.left = e.clientX + "px";
-  menu.style.top = e.clientY + "px";
+  menu.style.left = Math.min(e.clientX, window.innerWidth - 150) + "px";
+  menu.style.top = Math.min(e.clientY, window.innerHeight - 130) + "px";
 
   const addRow = (label: string, action: () => void) => {
     const row = document.createElement("div");
