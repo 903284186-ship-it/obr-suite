@@ -1228,13 +1228,13 @@ function renderSpell(_entry: Entry, data: DataEntry): string {
 function renderItem(_entry: Entry, data: DataEntry): string {
   const parts: string[] = [];
   const weaponBits: string[] = [];
-  if (data.dmg1) weaponBits.push(`${stripTags(String(data.dmg1))} ${dmgTypeStr(data.dmgType)}`);
-  if (data.dmg2) weaponBits.push(`双手 ${stripTags(String(data.dmg2))}`);
+  if (data.dmg1) weaponBits.push(`${formatTagsClickable(`{@dice ${stripTags(String(data.dmg1))}}`)} ${escapeHtml(dmgTypeStr(data.dmgType))}`);
+  if (data.dmg2) weaponBits.push(`双手 ${formatTagsClickable(`{@dice ${stripTags(String(data.dmg2))}}`)}`);
   if (Array.isArray(data.property) && data.property.length)
-    weaponBits.push(`属性：${data.property.map(stripTags).join("、")}`);
-  if (data.range) weaponBits.push(`射程：${stripTags(String(data.range))}`);
+    weaponBits.push(`属性：${escapeHtml(data.property.map(stripTags).join("、"))}`);
+  if (data.range) weaponBits.push(`射程：${escapeHtml(stripTags(String(data.range)))}`);
   if (weaponBits.length)
-    parts.push(`<p>${escapeHtml(weaponBits.join("　"))}</p>`);
+    parts.push(`<p>${weaponBits.join("　")}</p>`);
   if (data.ac != null) parts.push(`<p><b>AC</b> ${escapeHtml(String(data.ac))}</p>`);
   if (data.entries) parts.push(renderEntries(data.entries));
   return parts.join("");
