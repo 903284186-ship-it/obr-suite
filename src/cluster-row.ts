@@ -331,7 +331,6 @@ async function onGear() {
       OBR.viewport.getHeight(),
     ]);
     await OBR.popover.open({
-      anchorReference: "POSITION",
       id: SETTINGS_POPOVER_ID,
       url: SETTINGS_URL,
       width: 640,
