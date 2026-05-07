@@ -186,12 +186,14 @@ export async function setupChat(): Promise<void> {
   });
 
   unsubs.push(
-    OBR.broadcast.onMessage(BC_CHAT_TOGGLE, async () => {
-      let wasOpen = false;
-      try { await OBR.popover.close(CHAT_PANEL_ID); wasOpen = true; } catch {}
-      if (!wasOpen) {
+    OBR.broadcast.onMessage(BC_CHAT_TOGGLE, async (event) => {
+      const data = event.data as { on?: boolean } | undefined;
+      if (data?.on) {
         await openChatPanel();
         broadcastChatState(true);
+      } else {
+        await closeChatPanel();
+        broadcastChatState(false);
       }
     })
   );
