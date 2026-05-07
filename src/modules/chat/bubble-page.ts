@@ -41,7 +41,7 @@ async function updatePosition(b: Bubble): Promise<void> {
       OBR.viewport.getScale(),
     ]);
     if (items.length === 0) return;
-    const item = items[0];
+    const item: any = items[0];
     const dpi = await OBR.scene.grid.getDpi().catch(() => 150);
     let halfH = 75;
     try {
