@@ -15,7 +15,7 @@ import {
   renderEntries,
   type Entry,
   type DataEntry,
-} from "../search/page";
+} from "../search/data";
 
 const BC_CHAT_ADD_MESSAGE = "com.obr-suite/chat-add-message";
 const BC_CHAT_TOGGLE = "com.obr-suite/chat-toggle";
