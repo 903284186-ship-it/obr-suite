@@ -233,18 +233,22 @@ export async function setupChat(): Promise<void> {
       try { myId = await OBR.player.getId(); } catch {}
       if (payload.rollerId !== myId) return;
 
-      // Resolve sender token: selected token > name-matched > roller info fallback
+      // Resolve sender token: selected token (own/GM) > name-matched > roller info fallback
       let rollSenderName = payload.rollerName;
       let rollTokenId = "";
       try {
+        let isGM = false;
+        try { isGM = (await OBR.player.getRole()) === "GM"; } catch {}
         const sel = await OBR.player.getSelection();
         if (sel && sel.length === 1) {
           const items = await OBR.scene.items.getItems(sel);
           if (items.length === 1) {
             const token = items[0] as any;
             if (token.type === "IMAGE" && (token.layer === "CHARACTER" || token.layer === "MOUNT")) {
-              rollSenderName = token.text?.plainText ?? token.name ?? payload.rollerName;
-              rollTokenId = token.id ?? "";
+              if (isGM || token.createdUserId === myId) {
+                rollSenderName = token.text?.plainText ?? token.name ?? payload.rollerName;
+                rollTokenId = token.id ?? "";
+              }
             }
           }
         }

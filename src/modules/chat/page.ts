@@ -34,6 +34,7 @@ const emptyEl = msgsEl.querySelector(".empty") as HTMLElement;
 
 let lang: Language = "zh";
 let myColor = "#5dade2";
+let isGM = false;
 
 function escapeHtml(s: string): string {
   const d = document.createElement("div");
@@ -153,14 +154,32 @@ async function sendMessage(): Promise<void> {
   let selName = "";
   let selTokenId = "";
   try {
+    const myId = await OBR.player.getId();
     const sel = await OBR.player.getSelection();
     if (sel && sel.length === 1) {
       const items = await OBR.scene.items.getItems(sel);
       if (items.length === 1) {
         const token = items[0] as any;
         if (token.type === "IMAGE" && (token.layer === "CHARACTER" || token.layer === "MOUNT")) {
-          selName = token.text?.plainText ?? token.name ?? "";
-          selTokenId = token.id ?? "";
+          if (isGM || token.createdUserId === myId) {
+            selName = token.text?.plainText ?? token.name ?? "";
+            selTokenId = token.id ?? "";
+          }
+        }
+      }
+    }
+    if (!selTokenId) {
+      const pName = await OBR.player.getName();
+      if (pName) {
+        const nameItems = await OBR.scene.items.getItems((it: any) =>
+          it.type === "IMAGE" &&
+          (it.layer === "CHARACTER" || it.layer === "MOUNT") &&
+          it.visible &&
+          ((it.text?.plainText || "") === pName || it.name === pName)
+        );
+        if (nameItems.length > 0) {
+          selName = pName;
+          selTokenId = nameItems[0].id;
         }
       }
     }
@@ -263,6 +282,7 @@ async function init(): Promise<void> {
       import("../../state").then(m => m.getLocalLang),
     ]);
     myColor = color;
+    isGM = role === "GM";
     lang = getLang();
     applyI18nDom(lang);
   } catch {}
