@@ -55,13 +55,14 @@ async function getMessages(): Promise<ChatMessage[]> {
 async function setMessages(msgs: ChatMessage[]): Promise<void> {
   try {
     await OBR.room.setMetadata({ [CHAT_KEY]: msgs });
-    OBR.broadcast.sendMessage(BC_CHAT_ADD_MESSAGE, null, { destination: "LOCAL" });
+    OBR.broadcast.sendMessage(BC_CHAT_ADD_MESSAGE, {}, { destination: "LOCAL" });
   } catch {}
 }
 
 export async function addChatMessage(msg: ChatMessage): Promise<void> {
   const msgs = await getMessages();
-  msgs.push(msg);
+  const { rollPayload: _, ...clean } = msg;
+  msgs.push(clean as ChatMessage);
   if (msgs.length > MAX_MESSAGES) {
     msgs.splice(0, msgs.length - MAX_MESSAGES);
   }
