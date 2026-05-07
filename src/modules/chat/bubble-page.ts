@@ -102,7 +102,6 @@ async function init(): Promise<void> {
 
   dismissTimer = setTimeout(() => {
     dismiss();
-    try { OBR.modal.close(window.location.search.includes("bubble") ? "" : ""); } catch {}
   }, 5000);
 }
 

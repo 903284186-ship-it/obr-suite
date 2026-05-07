@@ -66,7 +66,7 @@ export async function addChatMessage(msg: ChatMessage): Promise<void> {
     msgs.splice(0, msgs.length - MAX_MESSAGES);
   }
   await OBR.room.setMetadata({ [CHAT_KEY]: msgs });
-  OBR.broadcast.sendMessage(BC_CHAT_ADD_MESSAGE, null, { destination: "LOCAL" });
+  OBR.broadcast.sendMessage(BC_CHAT_ADD_MESSAGE, {}, { destination: "LOCAL" });
 
   if (msg.type === "dm" || msg.type === "player") {
     showBubble(msg);
@@ -145,6 +145,7 @@ async function chatAnchor(): Promise<{ left: number; top: number }> {
 async function openChatPanel(): Promise<void> {
   const anchor = await chatAnchor();
   const size = getPanelSize(PANEL_IDS.chatMessages);
+  console.log("[chat] openChatPanel anchor:", anchor, "size:", size);
   await OBR.popover.open({
     id: CHAT_PANEL_ID,
     url: CHAT_URL,
@@ -172,6 +173,8 @@ function broadcastChatState(open: boolean): void {
 const unsubs: Array<() => void> = [];
 
 export async function setupChat(): Promise<void> {
+  console.log("[chat] setupChat called");
+
   registerPanelBbox(PANEL_IDS.chatMessages, async () => {
     try {
       const anchor = await chatAnchor();
@@ -187,6 +190,7 @@ export async function setupChat(): Promise<void> {
 
   unsubs.push(
     OBR.broadcast.onMessage(BC_CHAT_TOGGLE, async (event) => {
+      console.log("[chat] BC_CHAT_TOGGLE received:", event.data);
       const data = event.data as { on?: boolean } | undefined;
       if (data?.on) {
         await openChatPanel();
