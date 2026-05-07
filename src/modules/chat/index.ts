@@ -283,7 +283,7 @@ export async function setupChat(): Promise<void> {
         rollPayload: payload,
         senderAvatarUrl: rollSenderAvatar || undefined,
       };
-      await addChatMessage(msg, rollTokenId || undefined);
+      try { await addChatMessage(msg, rollTokenId || undefined); } catch {}
     })
   );
 
@@ -344,7 +344,7 @@ export async function setupChat(): Promise<void> {
           }
         }
       } catch {}
-      await addChatMessage(msg, tokenId);
+      try { await addChatMessage(msg, tokenId); } catch {}
     })
   );
 

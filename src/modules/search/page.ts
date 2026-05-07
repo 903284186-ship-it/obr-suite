@@ -1724,7 +1724,6 @@ previewEl.addEventListener("click", async (e) => {
     const src = chatBtn.dataset.src ?? "";
     const catLabel = categoryInfo(catNum).label;
     const srcLabel = sourceLabel(src);
-    const header = `[${catLabel}] ${name} · ${srcLabel}`;
     let detailHtml = "";
     const bodyEl = document.getElementById("prev-body");
     if (bodyEl) {
