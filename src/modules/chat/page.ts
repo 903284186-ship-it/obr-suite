@@ -89,7 +89,7 @@ async function sendMessage(): Promise<void> {
       if (items.length === 1) {
         const token = items[0] as any;
         if (token.type === "IMAGE" && (token.layer === "CHARACTER" || token.layer === "MOUNT")) {
-          selName = token.text || token.name || "";
+          selName = token.text?.plainText ?? token.name ?? "";
         }
       }
     }
@@ -103,6 +103,7 @@ async function sendMessage(): Promise<void> {
     senderName: selName,
     senderColor: myColor,
     ts: Date.now(),
+    bubble: !!selName,
   };
 
   try {

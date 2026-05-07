@@ -21,6 +21,7 @@ export interface ChatMessage {
   senderColor: string;
   ts: number;
   rollPayload?: DiceRollPayload;
+  bubble?: boolean;
 }
 
 const CHAT_KEY = "com.obr-suite/chat-messages";
@@ -42,6 +43,7 @@ export const BC_CHAT_STATE = "com.obr-suite/chat-state";
 export const BC_CHAT_RESIZE_END = "com.obr-suite/chat-resize-end";
 export const BC_CHAT_FOCUS_SENDER = "com.obr-suite/chat-focus-sender";
 export const BC_CHAT_BUBBLE_SHOW = "com.obr-suite/chat-bubble-show";
+export const BC_CHAT_CLEAR = "com.obr-suite/chat-clear";
 
 async function getMessages(): Promise<ChatMessage[]> {
   try {
@@ -61,7 +63,7 @@ async function setMessages(msgs: ChatMessage[]): Promise<void> {
 
 export async function addChatMessage(msg: ChatMessage): Promise<void> {
   const msgs = await getMessages();
-  const { rollPayload: _, ...clean } = msg;
+  const { rollPayload: _, bubble: _b, ...clean } = msg;
   msgs.push(clean as ChatMessage);
   if (msgs.length > MAX_MESSAGES) {
     msgs.splice(0, msgs.length - MAX_MESSAGES);
@@ -69,8 +71,10 @@ export async function addChatMessage(msg: ChatMessage): Promise<void> {
   await OBR.room.setMetadata({ [CHAT_KEY]: msgs });
   OBR.broadcast.sendMessage(BC_CHAT_ADD_MESSAGE, {}, { destination: "LOCAL" });
 
-  if (msg.type === "dm" || msg.type === "player") {
+  if (msg.bubble && msg.senderId) {
     showBubble(msg);
+    const tokenId = await findSenderToken(msg.senderId);
+    if (tokenId) await focusToken(tokenId);
   }
 }
 
@@ -287,6 +291,12 @@ export async function setupChat(): Promise<void> {
       if (!data?.senderId) return;
       const tokenId = await findSenderToken(data.senderId);
       if (tokenId) await focusToken(tokenId);
+    })
+  );
+
+  unsubs.push(
+    OBR.broadcast.onMessage(BC_CHAT_CLEAR, async () => {
+      try { await OBR.room.setMetadata({ [CHAT_KEY]: [] }); } catch {}
     })
   );
 }

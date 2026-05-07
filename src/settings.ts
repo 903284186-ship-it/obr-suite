@@ -2325,6 +2325,25 @@ const TABS: TabDef[] = [
       en: `<p>Chat message panel, replacing the old dice history button. Messages are stored in <b>room metadata</b> and persist across scenes (up to 200 most recent).</p>
 <p><b>Both DM and players</b> can send messages. All messages are visible to everyone. Dice rolls auto-generate roll messages.</p>`,
     },
+    afterRender: (root: HTMLElement) => {
+      const row = document.createElement("p");
+      row.style.cssText = "margin-top:10px";
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "tog";
+      btn.style.cssText = "display:inline-flex;align-items:center;gap:6px;padding:8px 16px;font-size:13px;border-radius:6px;background:rgba(231,76,60,0.18);border:1px solid rgba(231,76,60,0.5);color:#e74c3c;cursor:pointer;margin-top:4px";
+      btn.textContent = lang === "zh" ? "🗑 清空全部聊天记录" : "🗑 Clear all chat messages";
+      btn.addEventListener("click", async () => {
+        if (!confirm(lang === "zh" ? "确定要清空全部聊天记录吗？此操作不可撤销。" : "Clear all chat messages? This cannot be undone.")) return;
+        try {
+          const OBR = (await import("@owlbear-rodeo/sdk")).default;
+          await OBR.room.setMetadata({ "com.obr-suite/chat-messages": [] });
+          OBR.broadcast.sendMessage("com.obr-suite/chat-clear", {}, { destination: "LOCAL" });
+        } catch {}
+      });
+      row.appendChild(btn);
+      root.appendChild(row);
+    },
   },
 ];
 
