@@ -4,6 +4,18 @@ import { bindPanelDrag, watchDragSide } from "../../utils/panelDrag";
 import { PANEL_IDS } from "../../utils/panelLayout";
 import type { Language } from "../../state";
 import type { ChatMessage } from "./index";
+import {
+  findEntryData,
+  chipsFor,
+  renderMonster,
+  renderSpell,
+  renderItem,
+  renderAdventure,
+  renderBook,
+  renderEntries,
+  type Entry,
+  type DataEntry,
+} from "../search/page";
 
 const BC_CHAT_ADD_MESSAGE = "com.obr-suite/chat-add-message";
 const BC_CHAT_TOGGLE = "com.obr-suite/chat-toggle";
@@ -40,19 +52,23 @@ function avatarLetter(name: string): string {
   return (name || "?").charAt(0).toUpperCase();
 }
 
+const searchRenderCache = new Map<string, string>();
+
 function renderMessage(msg: ChatMessage): string {
   const time = formatTime(msg.ts);
   const name = escapeHtml(msg.senderName || "系统");
-  const content = msg.html
-    ? msg.content
-    : escapeHtml(msg.content).replace(/\n/g, "<br>");
-  const avatarHtml = msg.senderAvatarUrl
-    ? `<img class="msg-avatar-img" src="${escapeHtml(msg.senderAvatarUrl)}" alt="">`
+  const avatarUrl = (msg as any).senderAvatarUrl as string | undefined;
+  const avatarHtml = avatarUrl
+    ? `<img class="msg-avatar-img" src="${escapeHtml(avatarUrl)}" alt="">`
     : `<div class="msg-avatar" style="background:${msg.senderColor}">${avatarLetter(msg.senderName)}</div>`;
   const senderAttr = msg.senderId ? ` data-sender-id="${escapeHtml(msg.senderId)}"` : "";
   const searchAttr = msg.searchEntryId
     ? ` data-search-id="${escapeHtml(msg.searchEntryId)}" data-search-src="${escapeHtml(msg.searchEntrySrc ?? "")}"`
     : "";
+  const rendered = (msg as any)._searchHtml as string | undefined;
+  const content = rendered
+    ? `<div class="search-header">${escapeHtml(msg.content)}</div>\n<div class="search-body">${rendered}</div>`
+    : escapeHtml(msg.content).replace(/\n/g, "<br>");
 
   return `<div class="msg ${msg.type}"${senderAttr}${searchAttr}>
     ${avatarHtml}
@@ -75,6 +91,52 @@ async function loadMessages(): Promise<void> {
       msgsEl.appendChild(emptyEl);
       return;
     }
+    for (const msg of msgs) {
+      if (!(msg as any).senderAvatarUrl) {
+        const tokenId = (msg as any).senderTokenId as string | undefined;
+        if (tokenId) {
+          try {
+            const items = await OBR.scene.items.getItems([tokenId]);
+            if (items.length > 0) {
+              const img = (items[0] as any).image;
+              if (img?.url) (msg as any).senderAvatarUrl = img.url;
+            }
+          } catch {}
+        }
+      }
+      if (msg.searchEntryId && msg.searchCategory != null && !(msg as any)._searchHtml) {
+        const cacheKey = `${msg.searchEntryId}|${msg.searchEntrySrc}|${msg.searchCategory}`;
+        let html = searchRenderCache.get(cacheKey);
+        if (!html) {
+          try {
+            const entry: Entry = {
+              id: 0, c: msg.searchCategory, u: "", s: msg.searchEntrySrc ?? "", n: msg.searchEntryId,
+            };
+            const data = await findEntryData(entry);
+            if (data) {
+              let body = "";
+              if (msg.searchCategory === 1 || msg.searchCategory === 46) {
+                body = renderMonster(entry, data);
+              } else if (msg.searchCategory === 2) {
+                body = chipsFor(entry, data) + renderSpell(entry, data);
+              } else if (msg.searchCategory === 4 || msg.searchCategory === 31 || msg.searchCategory === 47 || msg.searchCategory === 56 || msg.searchCategory === 57) {
+                body = chipsFor(entry, data) + renderItem(entry, data);
+              } else if (msg.searchCategory === 13) {
+                body = chipsFor(entry, data) + renderAdventure(entry, data);
+              } else if (msg.searchCategory === 18 || msg.searchCategory === 44) {
+                body = chipsFor(entry, data) + renderBook(entry, data);
+              } else {
+                body = data.entries ? renderEntries(data.entries) : "";
+              }
+              html = body;
+            }
+          } catch {}
+          if (html) searchRenderCache.set(cacheKey, html);
+          else html = "";
+        }
+        (msg as any)._searchHtml = html;
+      }
+    }
     msgsEl.innerHTML = msgs.map(renderMessage).join("");
     msgsEl.scrollTop = msgsEl.scrollHeight;
   } catch {
@@ -89,7 +151,6 @@ async function sendMessage(): Promise<void> {
   inputEl.value = "";
 
   let selName = "";
-  let selAvatar = "";
   let selTokenId = "";
   try {
     const sel = await OBR.player.getSelection();
@@ -99,7 +160,6 @@ async function sendMessage(): Promise<void> {
         const token = items[0] as any;
         if (token.type === "IMAGE" && (token.layer === "CHARACTER" || token.layer === "MOUNT")) {
           selName = token.text?.plainText ?? token.name ?? "";
-          selAvatar = (token as any).image?.url ?? "";
           selTokenId = token.id ?? "";
         }
       }
@@ -115,7 +175,6 @@ async function sendMessage(): Promise<void> {
     senderColor: myColor,
     ts: Date.now(),
     bubble: !!selName,
-    senderAvatarUrl: selAvatar,
     tokenId: selTokenId || undefined,
   };
 

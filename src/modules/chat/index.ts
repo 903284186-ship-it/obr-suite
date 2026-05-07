@@ -22,14 +22,13 @@ export interface ChatMessage {
   ts: number;
   rollPayload?: DiceRollPayload;
   bubble?: boolean;
-  html?: boolean;
-  senderAvatarUrl?: string;
+  senderTokenId?: string;
   searchEntryId?: string;
   searchEntrySrc?: string;
+  searchCategory?: number;
 }
 
 const CHAT_KEY = "com.obr-suite/chat-messages";
-const MAX_MESSAGES = 200;
 
 const CHAT_PANEL_ID = "com.obr-suite/chat";
 const CHAT_BUBBLE_MODAL_ID = "com.obr-suite/chat-bubble";
@@ -65,12 +64,14 @@ async function setMessages(msgs: ChatMessage[]): Promise<void> {
   } catch {}
 }
 
+const MAX_METADATA_BYTES = 15500;
+
 export async function addChatMessage(msg: ChatMessage, tokenId?: string): Promise<void> {
   const msgs = await getMessages();
   const { rollPayload: _, bubble: __, ...clean } = msg;
   msgs.push(clean as ChatMessage);
-  if (msgs.length > MAX_MESSAGES) {
-    msgs.splice(0, msgs.length - MAX_MESSAGES);
+  while (msgs.length > 1 && JSON.stringify(msgs).length > MAX_METADATA_BYTES) {
+    msgs.shift();
   }
   await OBR.room.setMetadata({ [CHAT_KEY]: msgs });
   OBR.broadcast.sendMessage(BC_CHAT_ADD_MESSAGE, {}, { destination: "LOCAL" });
@@ -234,7 +235,6 @@ export async function setupChat(): Promise<void> {
 
       // Resolve sender token: selected token > name-matched > roller info fallback
       let rollSenderName = payload.rollerName;
-      let rollSenderAvatar = "";
       let rollTokenId = "";
       try {
         const sel = await OBR.player.getSelection();
@@ -244,12 +244,11 @@ export async function setupChat(): Promise<void> {
             const token = items[0] as any;
             if (token.type === "IMAGE" && (token.layer === "CHARACTER" || token.layer === "MOUNT")) {
               rollSenderName = token.text?.plainText ?? token.name ?? payload.rollerName;
-              rollSenderAvatar = (token as any).image?.url ?? "";
               rollTokenId = token.id ?? "";
             }
           }
         }
-        if (!rollSenderAvatar) {
+        if (!rollTokenId) {
           const pName = await OBR.player.getName();
           if (pName) {
             const nameItems = await OBR.scene.items.getItems((it: any) =>
@@ -258,10 +257,7 @@ export async function setupChat(): Promise<void> {
               it.visible &&
               ((it.text?.plainText || "") === pName || it.name === pName)
             );
-            if (nameItems.length > 0) {
-              const img = (nameItems[0] as any).image;
-              if (img?.url) rollSenderAvatar = img.url;
-            }
+            if (nameItems.length > 0) rollTokenId = nameItems[0].id;
           }
         }
       } catch {}
@@ -281,7 +277,7 @@ export async function setupChat(): Promise<void> {
         senderColor: payload.rollerColor,
         ts: payload.ts,
         rollPayload: payload,
-        senderAvatarUrl: rollSenderAvatar || undefined,
+        senderTokenId: rollTokenId || undefined,
       };
       try { await addChatMessage(msg, rollTokenId || undefined); } catch {}
     })
@@ -300,10 +296,9 @@ export async function setupChat(): Promise<void> {
         senderColor: raw.senderColor ?? "#5dade2",
         ts: raw.ts ?? Date.now(),
         bubble: raw.bubble,
-        html: raw.html,
-        senderAvatarUrl: raw.senderAvatarUrl,
         searchEntryId: raw.searchEntryId,
         searchEntrySrc: raw.searchEntrySrc,
+        searchCategory: raw.searchCategory,
       };
       const tokenId: string | undefined = raw.tokenId;
       try {
@@ -317,7 +312,7 @@ export async function setupChat(): Promise<void> {
         if (color) msg.senderColor = color;
         if (role === "GM") msg.type = "dm";
         if (!msg.senderId) msg.senderId = playerId;
-        if (!msg.senderAvatarUrl) {
+        if (!msg.senderTokenId) {
           let selTokenId: string | null = tokenId || null;
           if (!selTokenId) {
             try {
@@ -333,15 +328,7 @@ export async function setupChat(): Promise<void> {
               }
             } catch {}
           }
-          if (selTokenId) {
-            try {
-              const items = await OBR.scene.items.getItems([selTokenId]);
-              if (items.length > 0) {
-                const img = (items[0] as any).image;
-                if (img?.url) msg.senderAvatarUrl = img.url;
-              }
-            } catch {}
-          }
+          if (selTokenId) msg.senderTokenId = selTokenId;
         }
       } catch {}
       try { await addChatMessage(msg, tokenId); } catch {}

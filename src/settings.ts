@@ -2320,9 +2320,9 @@ const TABS: TabDef[] = [
     en: `${ICONS.coffee} Chat`,
     moduleId: "chat",
     body: {
-      zh: `<p>聊天消息面板，替代旧的投骰记录按钮。所有消息存储在<b>房间元数据</b>中，跨场景保留（最近 200 条）。</p>
+      zh: `<p>聊天消息面板，替代旧的投骰记录按钮。所有消息存储在<b>房间元数据</b>中，跨场景保留（16 kB 上限，超出自动清理旧消息）。</p>
 <p><b>DM 和玩家</b>都可以发送消息，所有消息对所有人可见。骰子投掷会自动生成掷骰消息。</p>`,
-      en: `<p>Chat message panel, replacing the old dice history button. Messages are stored in <b>room metadata</b> and persist across scenes (up to 200 most recent).</p>
+      en: `<p>Chat message panel, replacing the old dice history button. Messages are stored in <b>room metadata</b> and persist across scenes (16 kB limit, oldest messages auto-cleared when exceeded).</p>
 <p><b>Both DM and players</b> can send messages. All messages are visible to everyone. Dice rolls auto-generate roll messages.</p>`,
     },
     afterRender: (root: HTMLElement) => {

@@ -90,7 +90,7 @@ const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const MAX_RESULTS = 50;
 
 // --- Types ---
-interface Entry {
+export interface Entry {
   id: number;
   c: number;
   u: string;
@@ -111,7 +111,7 @@ interface IndexFile {
   x: Entry[];
   m: { s: Record<string, number> };
 }
-interface DataEntry {
+export interface DataEntry {
   ENG_name?: string;
   name?: string;
   source?: string;
@@ -721,7 +721,7 @@ function parseClassFamilyEntry(entry: Entry): ParsedClassEntry {
   };
 }
 
-async function findEntryData(entry: Entry): Promise<DataEntry | null> {
+export async function findEntryData(entry: Entry): Promise<DataEntry | null> {
   let arr = await loadCategoryData(entry);
   // Some 5etools categories are physically stored under MULTIPLE keys
   // in the same JSON file. The category map points at one primary
@@ -923,7 +923,7 @@ function richTags(s: string): string {
 }
 
 // --- Generic recursive renderer (strings + 5etools structured types) ---
-function renderEntries(entries: any[]): string {
+export function renderEntries(entries: any[]): string {
   return entries.map(renderEntry).join("");
 }
 function renderEntry(e: any): string {
@@ -1012,7 +1012,7 @@ function typeStr(t: any): string {
   return "";
 }
 
-function chipsFor(entry: Entry, data: DataEntry | null): string {
+export function chipsFor(entry: Entry, data: DataEntry | null): string {
   if (!data) return "";
   const c = entry.c;
   const chips: string[] = [];
@@ -1048,7 +1048,7 @@ function chipsFor(entry: Entry, data: DataEntry | null): string {
   return chips.length ? `<div class="chips">${chips.join("")}</div>` : "";
 }
 
-function renderMonster(entry: Entry, data: DataEntry): string {
+export function renderMonster(entry: Entry, data: DataEntry): string {
   const parts: string[] = [];
 
   const sz = sizeStr(data.size);
@@ -1219,7 +1219,7 @@ function renderSpellcasting(sc: any): string {
   return parts.join("");
 }
 
-function renderSpell(_entry: Entry, data: DataEntry): string {
+export function renderSpell(_entry: Entry, data: DataEntry): string {
   const parts: string[] = [];
   if (data.entries) parts.push(renderEntries(data.entries));
   if (data.entriesHigherLevel) {
@@ -1237,7 +1237,7 @@ function renderSpell(_entry: Entry, data: DataEntry): string {
   return parts.join("");
 }
 
-function renderItem(_entry: Entry, data: DataEntry): string {
+export function renderItem(_entry: Entry, data: DataEntry): string {
   const parts: string[] = [];
   const weaponBits: string[] = [];
   if (data.dmg1) weaponBits.push(`${formatTagsClickable(`{@dice ${stripTags(String(data.dmg1))}}`)} ${escapeHtml(dmgTypeStr(data.dmgType))}`);
@@ -1370,7 +1370,7 @@ function prerequisiteStr(prereq: any): string {
 }
 
 // Adventures / books — manifest only.
-function renderAdventure(_entry: Entry, data: DataEntry): string {
+export function renderAdventure(_entry: Entry, data: DataEntry): string {
   const parts: string[] = [];
   const lvl = data.level && (data.level.start != null || data.level.end != null)
     ? `<p><b>等级范围：</b>${escapeHtml(`${data.level.start ?? "?"} - ${data.level.end ?? "?"}`)}</p>`
@@ -1400,7 +1400,7 @@ function renderAdventure(_entry: Entry, data: DataEntry): string {
   return parts.join("");
 }
 
-function renderBook(_entry: Entry, data: DataEntry): string {
+export function renderBook(_entry: Entry, data: DataEntry): string {
   const parts: string[] = [];
   if (data.published) parts.push(`<p><b>出版：</b>${escapeHtml(String(data.published))}</p>`);
   if (data.author) parts.push(`<p><b>作者：</b>${escapeHtml(stripTags(String(data.author)))}</p>`);
@@ -1724,18 +1724,7 @@ previewEl.addEventListener("click", async (e) => {
     const src = chatBtn.dataset.src ?? "";
     const catLabel = categoryInfo(catNum).label;
     const srcLabel = sourceLabel(src);
-    let detailHtml = "";
-    const bodyEl = document.getElementById("prev-body");
-    if (bodyEl) {
-      const html = bodyEl.innerHTML;
-      if (html && !html.includes("prev-loading") && !html.includes("prev-empty")) {
-        detailHtml = html;
-        if (detailHtml.length > 8000) detailHtml = detailHtml.slice(0, 8000) + "…";
-      }
-    }
-    const content = detailHtml
-      ? `<div class="search-header">[${catLabel}] ${name} · ${srcLabel}</div>\n${detailHtml}`
-      : `[${catLabel}] ${name} · ${srcLabel}`;
+    const content = `[${catLabel}] ${name} · ${srcLabel}`;
     try {
       OBR.broadcast.sendMessage(
         "com.obr-suite/chat-add-message",
@@ -1747,9 +1736,9 @@ previewEl.addEventListener("click", async (e) => {
           senderName: "",
           senderColor: "#5dade2",
           ts: Date.now(),
-          html: !!detailHtml,
           searchEntryId: name,
           searchEntrySrc: src,
+          searchCategory: catNum,
         },
         { destination: "LOCAL" },
       );
