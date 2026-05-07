@@ -43,12 +43,19 @@ function avatarLetter(name: string): string {
 function renderMessage(msg: ChatMessage): string {
   const time = formatTime(msg.ts);
   const name = escapeHtml(msg.senderName || "系统");
-  const content = escapeHtml(msg.content).replace(/\n/g, "<br>");
-  const avatar = avatarLetter(msg.senderName);
+  const content = msg.html
+    ? msg.content
+    : escapeHtml(msg.content).replace(/\n/g, "<br>");
+  const avatarHtml = msg.senderAvatarUrl
+    ? `<img class="msg-avatar-img" src="${escapeHtml(msg.senderAvatarUrl)}" alt="">`
+    : `<div class="msg-avatar" style="background:${msg.senderColor}">${avatarLetter(msg.senderName)}</div>`;
   const senderAttr = msg.senderId ? ` data-sender-id="${escapeHtml(msg.senderId)}"` : "";
+  const searchAttr = msg.searchEntryId
+    ? ` data-search-id="${escapeHtml(msg.searchEntryId)}" data-search-src="${escapeHtml(msg.searchEntrySrc ?? "")}"`
+    : "";
 
-  return `<div class="msg ${msg.type}"${senderAttr}>
-    <div class="msg-avatar" style="background:${msg.senderColor}">${avatar}</div>
+  return `<div class="msg ${msg.type}"${senderAttr}${searchAttr}>
+    ${avatarHtml}
     <div class="msg-body">
       <div class="msg-head">
         <span class="msg-name" style="color:${msg.senderColor}">${name}</span>
@@ -82,6 +89,8 @@ async function sendMessage(): Promise<void> {
   inputEl.value = "";
 
   let selName = "";
+  let selAvatar = "";
+  let selTokenId = "";
   try {
     const sel = await OBR.player.getSelection();
     if (sel && sel.length === 1) {
@@ -90,12 +99,14 @@ async function sendMessage(): Promise<void> {
         const token = items[0] as any;
         if (token.type === "IMAGE" && (token.layer === "CHARACTER" || token.layer === "MOUNT")) {
           selName = token.text?.plainText ?? token.name ?? "";
+          selAvatar = (token as any).image?.url ?? "";
+          selTokenId = token.id ?? "";
         }
       }
     }
   } catch {}
 
-  const msg: Partial<ChatMessage> = {
+  const msg: Partial<ChatMessage> & { tokenId?: string } = {
     id: `msg-${Date.now()}-${Math.floor(Math.random() * 1e6)}`,
     type: "player",
     content,
@@ -104,6 +115,8 @@ async function sendMessage(): Promise<void> {
     senderColor: myColor,
     ts: Date.now(),
     bubble: !!selName,
+    senderAvatarUrl: selAvatar,
+    tokenId: selTokenId || undefined,
   };
 
   try {
@@ -161,6 +174,18 @@ window.addEventListener("pointerup", () => {
 msgsEl.addEventListener("click", (e) => {
   const msgEl = (e.target as HTMLElement).closest<HTMLElement>(".msg");
   if (!msgEl) return;
+  const searchId = msgEl.dataset.searchId;
+  if (searchId) {
+    const displayName = msgEl.querySelector(".msg-name")?.textContent ?? searchId;
+    try {
+      OBR.broadcast.sendMessage(
+        "com.obr-suite/search-query",
+        { q: displayName },
+        { destination: "LOCAL" },
+      );
+    } catch {}
+    return;
+  }
   const senderId = msgEl.dataset.senderId;
   if (!senderId) return;
   try {

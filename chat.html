@@ -90,6 +90,11 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{width:0;height:0;display:none}
   border-color:rgba(255,255,255,0.08);
 }
 .msg[data-sender-id]{cursor:pointer}
+.msg[data-search-id]{cursor:pointer}
+.msg[data-search-id]:hover{
+  background:rgba(93,173,226,0.08);
+  border-color:rgba(93,173,226,0.2);
+}
 
 .msg-avatar{
   flex-shrink:0;
@@ -98,12 +103,35 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{width:0;height:0;display:none}
   display:flex;align-items:center;justify-content:center;
   font-size:12px;font-weight:800;
   color:#fff;
+  overflow:hidden;
+}
+.msg-avatar-img{
+  flex-shrink:0;
+  width:28px;height:28px;
+  border-radius:50%;
+  object-fit:cover;
+  border:1.5px solid rgba(255,255,255,0.15);
 }
 .msg-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .msg-head{display:flex;align-items:baseline;gap:6px}
 .msg-name{font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .msg-time{font-size:9px;color:var(--text-dim);flex-shrink:0}
 .msg-content{font-size:12px;line-height:1.4;word-break:break-word;color:var(--text)}
+.msg-content .search-header{font-size:11px;font-weight:700;color:var(--accent);margin-bottom:4px;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:4px}
+.msg-content h4{font-size:11px;font-weight:700;color:#9bd0f0;margin:6px 0 2px}
+.msg-content p{margin:1px 0;line-height:1.35}
+.msg-content table{width:100%;border-collapse:collapse;font-size:11px;margin:4px 0}
+.msg-content td,.msg-content th{padding:1px 6px;border:1px solid rgba(255,255,255,0.08);text-align:center}
+.msg-content .chips{display:flex;flex-wrap:wrap;gap:3px;margin:2px 0}
+.msg-content .chip{font-size:9px;padding:1px 5px;background:rgba(255,255,255,0.06);border-radius:3px;color:var(--text-dim)}
+.msg-content .ab-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:2px;margin:3px 0;font-size:10px}
+.msg-content .ab-cell{text-align:center;padding:2px;background:rgba(255,255,255,0.03);border-radius:2px}
+.msg-content .ab-cell span{display:block;font-size:13px;font-weight:700;color:var(--accent)}
+.msg-content .prev-subtitle{font-size:11px;font-style:italic;color:var(--text-dim);margin-bottom:3px}
+.msg-content b,.msg-content strong{color:#ddd}
+.msg-content i,.msg-content em{color:var(--text-dim)}
+.msg-content ul,.msg-content ol{padding-left:16px;margin:2px 0}
+.msg-content li{line-height:1.35}
 
 .msg.roll{border-left:2px solid #5dade2;background:rgba(93,173,226,0.06)}
 .msg.system .msg-content{color:var(--text-dim);font-style:italic;font-size:11px}

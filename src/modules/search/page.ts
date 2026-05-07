@@ -1725,13 +1725,18 @@ previewEl.addEventListener("click", async (e) => {
     const catLabel = categoryInfo(catNum).label;
     const srcLabel = sourceLabel(src);
     const header = `[${catLabel}] ${name} · ${srcLabel}`;
-    let detail = "";
+    let detailHtml = "";
     const bodyEl = document.getElementById("prev-body");
     if (bodyEl) {
-      detail = bodyEl.textContent?.replace(/\n{2,}/g, "\n").trim() || "";
-      if (detail.length > 2000) detail = detail.slice(0, 2000) + "\n…";
+      const html = bodyEl.innerHTML;
+      if (html && !html.includes("prev-loading") && !html.includes("prev-empty")) {
+        detailHtml = html;
+        if (detailHtml.length > 8000) detailHtml = detailHtml.slice(0, 8000) + "…";
+      }
     }
-    const content = detail ? `${header}\n${detail}` : header;
+    const content = detailHtml
+      ? `<div class="search-header">[${catLabel}] ${name} · ${srcLabel}</div>\n${detailHtml}`
+      : `[${catLabel}] ${name} · ${srcLabel}`;
     try {
       OBR.broadcast.sendMessage(
         "com.obr-suite/chat-add-message",
@@ -1743,6 +1748,9 @@ previewEl.addEventListener("click", async (e) => {
           senderName: "",
           senderColor: "#5dade2",
           ts: Date.now(),
+          html: !!detailHtml,
+          searchEntryId: chatBtn.dataset.name ?? "",
+          searchEntrySrc: src,
         },
         { destination: "LOCAL" },
       );

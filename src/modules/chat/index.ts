@@ -22,6 +22,10 @@ export interface ChatMessage {
   ts: number;
   rollPayload?: DiceRollPayload;
   bubble?: boolean;
+  html?: boolean;
+  senderAvatarUrl?: string;
+  searchEntryId?: string;
+  searchEntrySrc?: string;
 }
 
 const CHAT_KEY = "com.obr-suite/chat-messages";
@@ -61,9 +65,9 @@ async function setMessages(msgs: ChatMessage[]): Promise<void> {
   } catch {}
 }
 
-export async function addChatMessage(msg: ChatMessage): Promise<void> {
+export async function addChatMessage(msg: ChatMessage, tokenId?: string): Promise<void> {
   const msgs = await getMessages();
-  const { rollPayload: _, bubble: _b, ...clean } = msg;
+  const { rollPayload: _, bubble: _b, html: _h, senderAvatarUrl: _a, searchEntryId: _s, searchEntrySrc: _c, ...clean } = msg;
   msgs.push(clean as ChatMessage);
   if (msgs.length > MAX_MESSAGES) {
     msgs.splice(0, msgs.length - MAX_MESSAGES);
@@ -72,24 +76,16 @@ export async function addChatMessage(msg: ChatMessage): Promise<void> {
   OBR.broadcast.sendMessage(BC_CHAT_ADD_MESSAGE, {}, { destination: "LOCAL" });
 
   if (msg.bubble && msg.senderId) {
-    showBubble(msg);
-    const tokenId = await findSenderToken(msg.senderId);
-    if (tokenId) await focusToken(tokenId);
+    const bid = tokenId || await findSenderToken(msg.senderId);
+    if (bid) {
+      await showBubble(msg, bid);
+      await focusToken(bid);
+    }
   }
 }
 
-async function showBubble(msg: ChatMessage): Promise<void> {
-  if (!msg.senderId) return;
+async function showBubble(msg: ChatMessage, tokenId: string): Promise<void> {
   try {
-    const items = await OBR.scene.items.getItems((it: any) =>
-      it.type === "IMAGE" &&
-      (it.layer === "CHARACTER" || it.layer === "MOUNT") &&
-      it.visible &&
-      it.createdUserId === msg.senderId
-    );
-    if (items.length === 0) return;
-    const tokenId = items[0].id;
-
     await OBR.modal.open({
       id: `${CHAT_BUBBLE_MODAL_ID}-${msg.id}`,
       url: `${CHAT_BUBBLE_URL}?tokenId=${encodeURIComponent(tokenId)}&name=${encodeURIComponent(msg.senderName)}&color=${encodeURIComponent(msg.senderColor)}&text=${encodeURIComponent(msg.content)}`,
@@ -258,7 +254,7 @@ export async function setupChat(): Promise<void> {
 
   unsubs.push(
     OBR.broadcast.onMessage(BC_CHAT_ADD_MESSAGE, async (event) => {
-      const raw = event.data as Partial<ChatMessage> | undefined;
+      const raw = event.data as (Partial<ChatMessage> & { tokenId?: string }) | undefined;
       if (!raw?.id || !raw?.content) return;
       const msg: ChatMessage = {
         id: raw.id,
@@ -268,7 +264,13 @@ export async function setupChat(): Promise<void> {
         senderName: raw.senderName ?? "",
         senderColor: raw.senderColor ?? "#5dade2",
         ts: raw.ts ?? Date.now(),
+        bubble: raw.bubble,
+        html: raw.html,
+        senderAvatarUrl: raw.senderAvatarUrl,
+        searchEntryId: raw.searchEntryId,
+        searchEntrySrc: raw.searchEntrySrc,
       };
+      const tokenId: string | undefined = raw.tokenId;
       try {
         const [name, color, role, playerId] = await Promise.all([
           OBR.player.getName(),
@@ -280,8 +282,20 @@ export async function setupChat(): Promise<void> {
         if (color) msg.senderColor = color;
         if (role === "GM") msg.type = "dm";
         if (!msg.senderId) msg.senderId = playerId;
+        if (!msg.senderAvatarUrl) {
+          const lookTokenId = tokenId || (await findSenderToken(playerId));
+          if (lookTokenId) {
+            try {
+              const items = await OBR.scene.items.getItems([lookTokenId]);
+              if (items.length > 0) {
+                const img = (items[0] as any).image;
+                if (img?.url) msg.senderAvatarUrl = img.url;
+              }
+            } catch {}
+          }
+        }
       } catch {}
-      await addChatMessage(msg);
+      await addChatMessage(msg, tokenId);
     })
   );
 
