@@ -67,7 +67,7 @@ async function setMessages(msgs: ChatMessage[]): Promise<void> {
 
 export async function addChatMessage(msg: ChatMessage, tokenId?: string): Promise<void> {
   const msgs = await getMessages();
-  const { rollPayload: _, bubble: _b, html: _h, senderAvatarUrl: _a, searchEntryId: _s, searchEntrySrc: _c, ...clean } = msg;
+  const { rollPayload: _, bubble: __, ...clean } = msg;
   msgs.push(clean as ChatMessage);
   if (msgs.length > MAX_MESSAGES) {
     msgs.splice(0, msgs.length - MAX_MESSAGES);
