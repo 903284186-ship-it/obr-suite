@@ -176,11 +176,10 @@ msgsEl.addEventListener("click", (e) => {
   if (!msgEl) return;
   const searchId = msgEl.dataset.searchId;
   if (searchId) {
-    const displayName = msgEl.querySelector(".msg-name")?.textContent ?? searchId;
     try {
       OBR.broadcast.sendMessage(
         "com.obr-suite/search-query",
-        { q: displayName },
+        { q: searchId },
         { destination: "LOCAL" },
       );
     } catch {}

@@ -1749,7 +1749,7 @@ previewEl.addEventListener("click", async (e) => {
           senderColor: "#5dade2",
           ts: Date.now(),
           html: !!detailHtml,
-          searchEntryId: chatBtn.dataset.name ?? "",
+          searchEntryId: name,
           searchEntrySrc: src,
         },
         { destination: "LOCAL" },

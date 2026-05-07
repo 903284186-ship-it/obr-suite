@@ -232,6 +232,40 @@ export async function setupChat(): Promise<void> {
       try { myId = await OBR.player.getId(); } catch {}
       if (payload.rollerId !== myId) return;
 
+      // Resolve sender token: selected token > name-matched > roller info fallback
+      let rollSenderName = payload.rollerName;
+      let rollSenderAvatar = "";
+      let rollTokenId = "";
+      try {
+        const sel = await OBR.player.getSelection();
+        if (sel && sel.length === 1) {
+          const items = await OBR.scene.items.getItems(sel);
+          if (items.length === 1) {
+            const token = items[0] as any;
+            if (token.type === "IMAGE" && (token.layer === "CHARACTER" || token.layer === "MOUNT")) {
+              rollSenderName = token.text?.plainText ?? token.name ?? payload.rollerName;
+              rollSenderAvatar = (token as any).image?.url ?? "";
+              rollTokenId = token.id ?? "";
+            }
+          }
+        }
+        if (!rollSenderAvatar) {
+          const pName = await OBR.player.getName();
+          if (pName) {
+            const nameItems = await OBR.scene.items.getItems((it: any) =>
+              it.type === "IMAGE" &&
+              (it.layer === "CHARACTER" || it.layer === "MOUNT") &&
+              it.visible &&
+              ((it.text?.plainText || "") === pName || it.name === pName)
+            );
+            if (nameItems.length > 0) {
+              const img = (nameItems[0] as any).image;
+              if (img?.url) rollSenderAvatar = img.url;
+            }
+          }
+        }
+      } catch {}
+
       const lines: string[] = [];
       if (payload.label) lines.push(payload.label);
       const diceStr = payload.dice.map(d => `d${d.type}=${d.value}`).join(" + ");
@@ -243,12 +277,13 @@ export async function setupChat(): Promise<void> {
         type: "roll",
         content: lines.join("\n"),
         senderId: payload.rollerId,
-        senderName: payload.rollerName,
+        senderName: rollSenderName,
         senderColor: payload.rollerColor,
         ts: payload.ts,
         rollPayload: payload,
+        senderAvatarUrl: rollSenderAvatar || undefined,
       };
-      await addChatMessage(msg);
+      await addChatMessage(msg, rollTokenId || undefined);
     })
   );
 
@@ -283,10 +318,24 @@ export async function setupChat(): Promise<void> {
         if (role === "GM") msg.type = "dm";
         if (!msg.senderId) msg.senderId = playerId;
         if (!msg.senderAvatarUrl) {
-          const lookTokenId = tokenId || (await findSenderToken(playerId));
-          if (lookTokenId) {
+          let selTokenId: string | null = tokenId || null;
+          if (!selTokenId) {
             try {
-              const items = await OBR.scene.items.getItems([lookTokenId]);
+              const pName = await OBR.player.getName();
+              if (pName) {
+                const items = await OBR.scene.items.getItems((it: any) =>
+                  it.type === "IMAGE" &&
+                  (it.layer === "CHARACTER" || it.layer === "MOUNT") &&
+                  it.visible &&
+                  ((it.text?.plainText || "") === pName || it.name === pName)
+                );
+                if (items.length > 0) selTokenId = items[0].id;
+              }
+            } catch {}
+          }
+          if (selTokenId) {
+            try {
+              const items = await OBR.scene.items.getItems([selTokenId]);
               if (items.length > 0) {
                 const img = (items[0] as any).image;
                 if (img?.url) msg.senderAvatarUrl = img.url;
