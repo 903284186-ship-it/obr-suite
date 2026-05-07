@@ -29,7 +29,8 @@ export type ModuleId =
   | "statusTracker"
   | "hpBar"
   | "metadataInspector"
-  | "vision";
+  | "vision"
+  | "chat";
 
 export type DataVersion = "2014" | "2024" | "all";
 export type Language = "zh" | "en";
@@ -151,6 +152,7 @@ export const DEFAULT_STATE: SuiteState = {
     // (continuous raycast on token movement) and will conflict
     // visually with OBR's own fog drawings if both are in use.
     vision: false,
+    chat: true,
   },
   dataVersion: "2024",
   allowPlayerMonsters: false,

@@ -21,12 +21,6 @@ export const PANEL_IDS = {
    *  trigger). Treated as its own draggable panel so the layout
    *  editor can reposition it independently of the trigger. */
   clusterRow: "cluster-row",
-  diceHistory: "dice-history",
-  /** Dice-history TRIGGER button at the bottom-right (the d20 chip
-   *  the user clicks to toggle the history popover). Independent
-   *  panel so users can move the trigger out of OBR's bottom-right
-   *  hot-zone if it overlaps something else. */
-  diceHistoryTrigger: "dice-history-trigger",
   initiative: "initiative",
   bestiaryPanel: "bestiary-panel",
   bestiaryInfo: "bestiary-info",
@@ -43,6 +37,7 @@ export const PANEL_IDS = {
    *  right-click menu). Same drag mechanics as the bestiary info /
    *  cc-info popovers. */
   hpBar: "hp-bar",
+  chatMessages: "chat-messages",
 } as const;
 
 export type PanelId = (typeof PANEL_IDS)[keyof typeof PANEL_IDS];

@@ -2314,6 +2314,18 @@ const TABS: TabDef[] = [
       });
     },
   },
+  {
+    id: "chat",
+    zh: `${ICONS.coffee} 聊天`,
+    en: `${ICONS.coffee} Chat`,
+    moduleId: "chat",
+    body: {
+      zh: `<p>聊天消息面板，替代旧的投骰记录按钮。所有消息存储在<b>房间元数据</b>中，跨场景保留（最近 200 条）。</p>
+<p><b>DM 和玩家</b>都可以发送消息，所有消息对所有人可见。骰子投掷会自动生成掷骰消息。</p>`,
+      en: `<p>Chat message panel, replacing the old dice history button. Messages are stored in <b>room metadata</b> and persist across scenes (up to 200 most recent).</p>
+<p><b>Both DM and players</b> can send messages. All messages are visible to everyone. Dice rolls auto-generate roll messages.</p>`,
+    },
+  },
 ];
 
 // Stable channel hides: drop tabs whose backing module is hidden
@@ -2348,6 +2360,7 @@ function moduleLabelKey(id: ModuleId): string {
     case "portals": return lang === "zh" ? "传送门" : "Portals";
     case "bubbles": return lang === "zh" ? "血量气泡" : "HP Bubbles";
     case "statusTracker": return lang === "zh" ? "状态追踪" : "Status Tracker";
+    case "chat": return lang === "zh" ? "聊天" : "Chat";
     default: return id;
   }
 }

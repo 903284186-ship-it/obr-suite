@@ -16,6 +16,7 @@ import { setupStatusTracker, teardownStatusTracker } from "./modules/statusTrack
 import { setupHpBar, teardownHpBar } from "./modules/hpBar";
 import { setupMetadataInspector, teardownMetadataInspector } from "./modules/metadata-inspector";
 import { setupVision, teardownVision } from "./modules/vision";
+import { setupChat, teardownChat } from "./modules/chat";
 import { setupCrossSceneCards } from "./modules/cross-scene-cards";
 import { assetUrl } from "./asset-base";
 import { onViewportResize } from "./utils/viewportAnchor";
@@ -318,33 +319,6 @@ registerPanelBbox(PANEL_IDS.clusterRow, async () => {
 // it without touching the history popover above it. Width matches
 // HISTORY_TRIGGER_W in dice/index.ts (92px after the drag-grip
 // expansion).
-registerPanelBbox(PANEL_IDS.diceHistoryTrigger, async () => {
-  try {
-    const [vw, vh] = await Promise.all([
-      OBR.viewport.getWidth(),
-      OBR.viewport.getHeight(),
-    ]);
-    const userOff = getPanelOffset(PANEL_IDS.diceHistoryTrigger);
-    const W = 92;
-    const H = 64;
-    // Default base offsets must match dice/index.ts'
-    // HISTORY_TRIGGER_RIGHT_OFFSET (75) and
-    // HISTORY_TRIGGER_BOTTOM_OFFSET (5). The earlier `bottom = 0 - dy`
-    // was off by 5px which caused the drag-preview ghost to start at
-    // a y-position 5px below the actual rendered iframe — and after
-    // accumulated drags the panel could pin against the bottom edge
-    // because each ghost-vs-real mismatch nudged the offset further.
-    const right = 75 - userOff.dx;
-    const bottom = 5 - userOff.dy;
-    return {
-      left: vw - right - W,
-      top: vh - bottom - H,
-      width: W,
-      height: H,
-    };
-  } catch { return null; }
-});
-
 // Re-anchor cluster trigger + row on viewport resize. Same id + same url
 // → OBR updates each popover in place.
 onViewportResize(async () => {
@@ -402,8 +376,7 @@ OBR.onReady(() => {
     const panelIds = [
       PANEL_IDS.cluster,
       PANEL_IDS.clusterRow,
-      PANEL_IDS.diceHistoryTrigger,
-      PANEL_IDS.diceHistory,
+      PANEL_IDS.chatMessages,
       PANEL_IDS.search,
       PANEL_IDS.initiative,
       PANEL_IDS.bestiaryPanel,
@@ -535,6 +508,7 @@ const modules: Partial<Record<keyof ReturnType<typeof getState>["enabled"], Modu
     teardown: teardownCharacterCards,
   },
   dice: { setup: setupDice, teardown: teardownDice },
+  chat: { setup: setupChat, teardown: teardownChat },
   portals: { setup: setupPortals, teardown: teardownPortals },
   bubbles: { setup: setupBubbles, teardown: teardownBubbles },
   hpBar: { setup: setupHpBar, teardown: teardownHpBar },

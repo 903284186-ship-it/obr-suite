@@ -37,6 +37,8 @@ const BC_TOGGLE_CC_PANEL = "com.obr-suite/cc-panel-toggle";
 
 const LS_AUTO_BESTIARY = "com.bestiary/auto-popup";
 const LS_AUTO_CHARCARD = "character-cards/auto-info";
+const LS_CHAT_AUTO_OPEN = "obr-suite/chat-auto-open";
+const BC_CHAT_TOGGLE = "com.obr-suite/chat-toggle";
 
 const rowEl = document.getElementById("row") as HTMLDivElement;
 
@@ -167,6 +169,17 @@ function renderRow() {
       })
     );
   }
+  if (s.enabled.chat) {
+    popupBtns.push(
+      btnHTML({
+        id: "btnChatToggle",
+        labelHtml: t(lang, "chatBtnToggle"),
+        toggle: true,
+        on: isAutoPopupOn(LS_CHAT_AUTO_OPEN),
+        title: t(lang, "chatBtnToggle"),
+      })
+    );
+  }
   if (popupBtns.length) {
     const labelText = t(lang, "groupLabelPopups");
     const isVerticalLabel = lang === "zh";
@@ -235,6 +248,7 @@ function renderRow() {
   document
     .getElementById("btnCharCardPanel")
     ?.addEventListener("click", onCharCardPanel);
+  document.getElementById("btnChatToggle")?.addEventListener("click", onChatToggle);
   document.getElementById("btnAnnounce")?.addEventListener("click", onAnnounce);
   document.getElementById("btnGear")?.addEventListener("click", onGear);
   applyAnnounceBlink();
@@ -278,6 +292,12 @@ function onCharCardPanel() {
       { destination: "LOCAL" }
     );
   } catch {}
+}
+
+function onChatToggle() {
+  const next = !isAutoPopupOn(LS_CHAT_AUTO_OPEN);
+  setAutoPopupOn(LS_CHAT_AUTO_OPEN, next, BC_CHAT_TOGGLE);
+  renderRow();
 }
 
 async function fetchAnnouncementVersion(): Promise<string | null> {

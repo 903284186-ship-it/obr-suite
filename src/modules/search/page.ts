@@ -1567,13 +1567,14 @@ async function renderPreviewFor(entry: Entry) {
   const backpackBtn = itemCategories.has(entry.c)
     ? `<button class="bp-add-btn" id="bp-add-btn" data-name="${escapeHtml(entry.n)}" data-display="${escapeHtml(display)}">＋ 加入背包</button>`
     : "";
+  const chatSendBtn = `<button class="chat-send-btn" id="chat-send-btn" data-name="${escapeHtml(entry.n)}" data-display="${escapeHtml(display)}" data-cat="${entry.c}" data-src="${code}">💬 发送到聊天</button>`;
 
   previewEl.innerHTML = `
     <div class="prev-head">
       <div class="prev-title">${escapeHtml(display)}</div>
       ${entry.n && entry.n !== display ? `<div class="prev-eng">${escapeHtml(entry.n)}</div>` : ""}
       <div class="prev-meta">${escapeHtml(cat.label)} · ${escapeHtml(srcDisplay)}${escapeHtml(page)}</div>
-      ${backpackBtn}
+      ${backpackBtn}${chatSendBtn}
     </div>
     <div class="prev-body" id="prev-body"><div class="prev-loading">加载中…</div></div>
   `;
@@ -1710,6 +1711,40 @@ previewEl.addEventListener("click", async (e) => {
     setTimeout(() => {
       bpBtn.textContent = "＋ 加入背包";
       (bpBtn as HTMLButtonElement).disabled = false;
+    }, 1500);
+    return;
+  }
+
+  const chatBtn = (e.target as HTMLElement | null)?.closest<HTMLElement>(".chat-send-btn");
+  if (chatBtn) {
+    e.preventDefault();
+    e.stopPropagation();
+    const name = chatBtn.dataset.display ?? chatBtn.dataset.name ?? "";
+    const catNum = Number(chatBtn.dataset.cat ?? "0");
+    const src = chatBtn.dataset.src ?? "";
+    const catLabel = categoryInfo(catNum).label;
+    const srcLabel = sourceLabel(src);
+    const content = `[${catLabel}] ${name} · ${srcLabel}`;
+    try {
+      OBR.broadcast.sendMessage(
+        "com.obr-suite/chat-add-message",
+        {
+          id: `search-${Date.now()}-${Math.floor(Math.random() * 1e6)}`,
+          type: "player",
+          content,
+          senderId: "",
+          senderName: "",
+          senderColor: "#5dade2",
+          ts: Date.now(),
+        },
+        { destination: "LOCAL" },
+      );
+    } catch {}
+    chatBtn.textContent = "\u2713 已发送";
+    (chatBtn as HTMLButtonElement).disabled = true;
+    setTimeout(() => {
+      chatBtn.textContent = "\uD83D\uDCAC 发送到聊天";
+      (chatBtn as HTMLButtonElement).disabled = false;
     }, 1500);
     return;
   }

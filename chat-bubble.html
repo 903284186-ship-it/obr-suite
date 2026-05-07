@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>Chat Bubble</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{
+  height:100%;width:100%;overflow:hidden;
+  background:transparent;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;
+  color:#e6e8ee;font-size:12px;
+}
+.bubble{
+  position:absolute;
+  display:flex;flex-direction:column;gap:2px;
+  padding:6px 10px;
+  background:rgba(31,34,48,0.94);
+  border:1px solid rgba(93,173,226,0.4);
+  border-radius:8px;
+  max-width:220px;
+  box-shadow:0 4px 16px rgba(0,0,0,0.5);
+  pointer-events:none;
+  transform:translate(-50%,-100%) translateY(-14px);
+  opacity:0;
+  transition:opacity .3s;
+  z-index:10;
+}
+.bubble.visible{opacity:1}
+.bubble-name{font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bubble-text{font-size:11px;line-height:1.35;word-break:break-word;color:#ccc}
+.bubble::after{
+  content:"";
+  position:absolute;
+  top:100%;left:50%;
+  transform:translateX(-50%);
+  border:6px solid transparent;
+  border-top-color:rgba(31,34,48,0.94);
+}
+</style>
+</head>
+<body>
+<div id="container"></div>
+<script type="module" src="/src/modules/chat/bubble-page.ts"></script>
+</body>
+</html>

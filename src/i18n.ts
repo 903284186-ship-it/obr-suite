@@ -341,6 +341,14 @@ const TR: Dict = {
   bestiaryLoading: { zh: "加载中...", en: "Loading…" },
   bestiarySortByCR: { zh: "按CR排序", en: "Sort by CR" },
   bestiaryNoMatch: { zh: "未找到匹配的怪物", en: "No matching monsters" },
+
+  // === Chat ===
+  chatTitle: { zh: "聊天", en: "Chat" },
+  chatPlaceholder: { zh: "输入消息…", en: "Type a message…" },
+  chatSend: { zh: "发送", en: "Send" },
+  chatEmpty: { zh: "暂无消息", en: "No messages yet" },
+  chatBtnToggle: { zh: "聊天", en: "Chat" },
+  chatSearchSend: { zh: "发送到聊天", en: "Send to Chat" },
 };
 
 export function t(lang: Language, key: keyof typeof TR): string {
