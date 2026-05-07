@@ -133,8 +133,8 @@ async function computeBackpackWeapons(bp: BackpackData, d: any): Promise<any[]> 
 
   const pool = await loadWeaponDetails();
   const abilities = d.abilities || {};
-  const str = Number(abilities.str?.score ?? 10);
-  const dex = Number(abilities.dex?.score ?? 10);
+  const str = Number(abilities.str?.total ?? 10);
+  const dex = Number(abilities.dex?.total ?? 10);
   const lvl = d.total_level ?? 1;
   const pBonus = Math.ceil(lvl / 4) + 1;
 
@@ -158,18 +158,23 @@ async function computeBackpackWeapons(bp: BackpackData, d: any): Promise<any[]> 
     const rawType = (detail.type || "").toUpperCase().split("|")[0];
     const tIsMelee = rawType === "M";
     const tIsRanged = rawType === "R" || isRanged || !!detail.range;
-    let atkMod: number;
-    if (tIsRanged && !tIsMelee) {
-      atkMod = Math.floor((dex - 10) / 2) + pBonus;
-    } else if (isFinesse) {
-      atkMod = Math.max(Math.floor((str - 10) / 2), Math.floor((dex - 10) / 2)) + pBonus;
+    const strMod = Math.floor((str - 10) / 2);
+    const dexMod = Math.floor((dex - 10) / 2);
+    let abilityMod: number;
+    if (isFinesse) {
+      abilityMod = Math.max(strMod, dexMod);
+    } else if (tIsRanged && !tIsMelee) {
+      abilityMod = dexMod;
     } else {
-      atkMod = Math.floor((str - 10) / 2) + pBonus;
+      abilityMod = strMod;
     }
+    const atkMod = abilityMod + pBonus;
+    const baseDmg = String(detail.dmg1 || "");
+    const damage = abilityMod !== 0 ? `${baseDmg}+${abilityMod}` : baseDmg;
     return {
       name: detail.name || entry.name,
       atkMod,
-      damage: String(detail.dmg1 || ""),
+      damage,
       damage_type: DMGTYPE_ZH[String(detail.dmgType || "").toUpperCase()] || "",
       extra_damage: detail.dmg2 ? String(detail.dmg2) : null,
       properties: propLabels.join(" · "),

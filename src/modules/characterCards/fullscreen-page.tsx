@@ -481,10 +481,12 @@ function CombatSection({ data, cardId }: { data: CharacterData; cardId: string }
         }
 
         const abilities = data.abilities || {};
-        const str = Number(abilities.str?.score ?? 10);
-        const dex = Number(abilities.dex?.score ?? 10);
+        const str = Number(abilities.str?.total ?? 10);
+        const dex = Number(abilities.dex?.total ?? 10);
         const lvl = data.total_level ?? 1;
         const pBonus = pb(lvl);
+        const strMod = mod(str);
+        const dexMod = mod(dex);
 
         const parsed = bp.map((entry: any) => {
           const detail = pool.find((it: any) =>
@@ -497,18 +499,20 @@ function CombatSection({ data, cardId }: { data: CharacterData; cardId: string }
           const t = parseWeaponType(detail.type || "");
           const isRanged = t.isRanged || p.isRanged || !!detail.range;
           const isMelee = t.isMelee || p.isMelee;
-          let atkMod: number;
-          if (isRanged && !isMelee) {
-            atkMod = mod(dex) + pBonus;
-          } else if (p.isFinesse) {
-            atkMod = Math.max(mod(str), mod(dex)) + pBonus;
+          let abilityMod: number;
+          if (p.isFinesse) {
+            abilityMod = Math.max(strMod, dexMod);
+          } else if (isRanged && !isMelee) {
+            abilityMod = dexMod;
           } else {
-            atkMod = mod(str) + pBonus;
+            abilityMod = strMod;
           }
+          const atkMod = abilityMod + pBonus;
+          const baseDmg = String(detail.dmg1 || "");
           return {
             name: detail.name || entry.name,
             atkMod,
-            damage: String(detail.dmg1 || ""),
+            damage: abilityMod !== 0 ? `${baseDmg}+${abilityMod}` : baseDmg,
             damage_type: DMGTYPE_ZH[String(detail.dmgType || "").toUpperCase()] || "",
             extra_damage: detail.dmg2 ? String(detail.dmg2) : null,
             properties: p.labels || null,
