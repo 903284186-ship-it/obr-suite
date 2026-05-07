@@ -129,11 +129,7 @@ function formatMoney(n: number): string {
 }
 
 async function computeBackpackWeapons(bp: BackpackData, d: any): Promise<any[]> {
-  const weaponTypes = bp.filter((e) => {
-    const t = (e.type || "").trim().toUpperCase().split("|")[0];
-    return t === "M" || t === "R";
-  });
-  if (weaponTypes.length === 0) return [];
+  if (bp.length === 0) return [];
 
   const pool = await loadWeaponDetails();
   const abilities = d.abilities || {};
@@ -142,11 +138,13 @@ async function computeBackpackWeapons(bp: BackpackData, d: any): Promise<any[]> 
   const lvl = d.total_level ?? 1;
   const pBonus = Math.ceil(lvl / 4) + 1;
 
-  return weaponTypes.map((entry) => {
+  return bp.map((entry) => {
     const detail = pool.find((it: any) =>
       it.name === entry.name || it.ENG_name === entry.srdName || it.name === entry.srdName,
     );
     if (!detail) return null;
+    const detailType = (detail.type || "").toUpperCase().split("|")[0];
+    if (detailType !== "M" && detailType !== "R") return null;
     const propsArr: string[] = Array.isArray(detail.property) ? detail.property.map((p: any) => String(p)) : [];
     let isFinesse = false, isRanged = false;
     const propLabels: string[] = [];

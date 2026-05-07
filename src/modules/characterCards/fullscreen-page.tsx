@@ -463,11 +463,7 @@ function CombatSection({ data, cardId }: { data: CharacterData; cardId: string }
         const bpKey = `com.obr-suite/backpack/${cardId}`;
         const raw = meta[bpKey];
         const bp: any[] = Array.isArray(raw) ? raw : [];
-        const weaponTypes = bp.filter((e: any) => {
-          const t = (e.type || "").toUpperCase().split("|")[0];
-          return t === "M" || t === "R";
-        });
-        if (weaponTypes.length === 0) return;
+        if (bp.length === 0) return;
 
         const base = "https://5e.kiwee.top";
         const [itemsRes, baseRes] = await Promise.all([
@@ -490,11 +486,13 @@ function CombatSection({ data, cardId }: { data: CharacterData; cardId: string }
         const lvl = data.total_level ?? 1;
         const pBonus = pb(lvl);
 
-        const parsed = weaponTypes.map((entry: any) => {
+        const parsed = bp.map((entry: any) => {
           const detail = pool.find((it: any) =>
             it.name === entry.name || it.ENG_name === entry.srdName,
           );
           if (!detail) return null;
+          const detailType = (detail.type || "").toUpperCase().split("|")[0];
+          if (detailType !== "M" && detailType !== "R") return null;
           const p = parseWeaponProps(detail.property);
           const t = parseWeaponType(detail.type || "");
           const isRanged = t.isRanged || p.isRanged || !!detail.range;
