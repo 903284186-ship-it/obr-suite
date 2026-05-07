@@ -296,7 +296,8 @@ function onCharCardPanel() {
 
 function onChatToggle() {
   const next = !isAutoPopupOn(LS_CHAT_AUTO_OPEN);
-  setAutoPopupOn(LS_CHAT_AUTO_OPEN, next, BC_CHAT_TOGGLE);
+  writeLS(LS_CHAT_AUTO_OPEN, next ? "1" : "0");
+  OBR.broadcast.sendMessage(BC_CHAT_TOGGLE, { v: next ? 1 : 0 }, { destination: "LOCAL" });
   renderRow();
 }
 
