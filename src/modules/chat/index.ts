@@ -89,6 +89,9 @@ async function showBubble(msg: ChatMessage): Promise<void> {
       id: `${CHAT_BUBBLE_MODAL_ID}-${msg.id}`,
       url: `${CHAT_BUBBLE_URL}?tokenId=${encodeURIComponent(tokenId)}&name=${encodeURIComponent(msg.senderName)}&color=${encodeURIComponent(msg.senderColor)}&text=${encodeURIComponent(msg.content)}`,
       fullScreen: true,
+      hideBackdrop: true,
+      hidePaper: true,
+      disablePointerEvents: true,
     });
     setTimeout(async () => {
       try { await OBR.modal.close(`${CHAT_BUBBLE_MODAL_ID}-${msg.id}`); } catch {}
@@ -268,7 +271,7 @@ export async function setupChat(): Promise<void> {
           OBR.player.getRole(),
           OBR.player.getId(),
         ]);
-        if (name) msg.senderName = name;
+        if (name && !msg.senderName) msg.senderName = name;
         if (color) msg.senderColor = color;
         if (role === "GM") msg.type = "dm";
         if (!msg.senderId) msg.senderId = playerId;

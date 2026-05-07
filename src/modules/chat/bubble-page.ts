@@ -105,4 +105,4 @@ async function init(): Promise<void> {
   }, 5000);
 }
 
-init();
+OBR.onReady(init);

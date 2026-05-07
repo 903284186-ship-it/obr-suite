@@ -81,12 +81,26 @@ async function sendMessage(): Promise<void> {
   if (!content) return;
   inputEl.value = "";
 
+  let selName = "";
+  try {
+    const sel = await OBR.player.getSelection();
+    if (sel && sel.length === 1) {
+      const items = await OBR.scene.items.getItems(sel);
+      if (items.length === 1) {
+        const token = items[0] as any;
+        if (token.type === "IMAGE" && (token.layer === "CHARACTER" || token.layer === "MOUNT")) {
+          selName = token.text || token.name || "";
+        }
+      }
+    }
+  } catch {}
+
   const msg: Partial<ChatMessage> = {
     id: `msg-${Date.now()}-${Math.floor(Math.random() * 1e6)}`,
     type: "player",
     content,
     senderId: "",
-    senderName: "",
+    senderName: selName,
     senderColor: myColor,
     ts: Date.now(),
   };
@@ -197,4 +211,4 @@ async function init(): Promise<void> {
   });
 }
 
-init();
+OBR.onReady(init);
