@@ -21,6 +21,7 @@ import {
   BC_BACKPACK_ADD_ITEM,
   itemTypeToCssClass,
 } from "../backpack/index";
+import { mountResourcePanel } from "../resourceTracker/panel";
 import type { BackpackData } from "../backpack/types";
 
 const SHOW_MSG = "com.character-cards/info-show";
@@ -619,17 +620,29 @@ function render(d: any, cardId: string, roomId: string, live: BubblesData = {}, 
     ${weps}
     ${featuresHtml}
     ${bpHtml}
+    <div id="rt-mount" style="position:relative; min-height:60px"></div>
   `;
   bindStatRowInputs();
   bindBackpackInteractions();
-  // The drag handle DOM element is recreated on every render() (we
-  // assigned root.innerHTML), so the existing pointer-event bindings
-  // on the previous element are gone. Re-bind for the new node.
   const handle = root.querySelector<HTMLDivElement>("#drag-handle");
   if (handle) {
     if (currentDragUnbind) currentDragUnbind();
     currentDragUnbind = bindPanelDrag(handle, PANEL_IDS.ccInfo);
   }
+  // Resource tracker — mount/re-mount after every render.
+  mountRtPanel();
+}
+
+let rtMountHandle: { refresh: () => Promise<void>; unmount: () => void } | null = null;
+function mountRtPanel(): void {
+  const container = root.querySelector<HTMLElement>("#rt-mount");
+  if (!container) return;
+  rtMountHandle?.unmount();
+  rtMountHandle = mountResourcePanel({
+    container,
+    getItemId: () => boundItemId,
+  });
+  void rtMountHandle.refresh();
 }
 
 // Tracks the drag-handle's current bindPanelDrag unbind function so we

@@ -10,6 +10,7 @@
 
 import OBR from "@owlbear-rodeo/sdk";
 import { bindPanelDrag } from "./utils/panelDrag";
+import { mountResourcePanel } from "./modules/resourceTracker/panel";
 import { PANEL_IDS } from "./utils/panelLayout";
 import {
   parseStatInput,
@@ -129,9 +130,6 @@ OBR.onReady(async () => {
   } catch {}
   if (!isGM) document.body.classList.add("is-player");
   await refresh();
-  // Live sync — when ANY scene item changes, refresh our snapshot
-  // so external HP / AC edits (e.g. via the bestiary popover, or a
-  // direct metadata edit) keep this bar accurate.
   OBR.scene.items.onChange(() => { void refresh(); });
   OBR.player.onChange((p) => {
     const nextGM = p.role === "GM";
@@ -140,4 +138,12 @@ OBR.onReady(async () => {
       document.body.classList.toggle("is-player", !isGM);
     }
   });
+  // Resource tracker
+  const rtContainer = document.getElementById("rt-mount");
+  if (rtContainer) {
+    mountResourcePanel({
+      container: rtContainer,
+      getItemId: () => itemId,
+    });
+  }
 });

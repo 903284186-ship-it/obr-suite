@@ -17,6 +17,7 @@ import { setupHpBar, teardownHpBar } from "./modules/hpBar";
 import { setupMetadataInspector, teardownMetadataInspector } from "./modules/metadata-inspector";
 import { setupVision, teardownVision } from "./modules/vision";
 import { setupChat, teardownChat } from "./modules/chat";
+import { setupResourceTracker, teardownResourceTracker } from "./modules/resourceTracker";
 import { setupCrossSceneCards } from "./modules/cross-scene-cards";
 import { assetUrl } from "./asset-base";
 import { onViewportResize } from "./utils/viewportAnchor";
@@ -509,6 +510,7 @@ const modules: Partial<Record<keyof ReturnType<typeof getState>["enabled"], Modu
   },
   dice: { setup: setupDice, teardown: teardownDice },
   chat: { setup: setupChat, teardown: teardownChat },
+  resourceTracker: { setup: setupResourceTracker, teardown: teardownResourceTracker },
   portals: { setup: setupPortals, teardown: teardownPortals },
   bubbles: { setup: setupBubbles, teardown: teardownBubbles },
   hpBar: { setup: setupHpBar, teardown: teardownHpBar },

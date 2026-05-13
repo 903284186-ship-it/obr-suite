@@ -5,6 +5,7 @@ import { bindRollableContextMenu } from "../dice/context-menu";
 import { subscribeToSfx } from "../dice/sfx-broadcast";
 import { bindPanelDrag } from "../../utils/panelDrag";
 import { PANEL_IDS } from "../../utils/panelLayout";
+import { mountResourcePanel } from "../resourceTracker/panel";
 import {
   parseStatInput,
   readBubbles,
@@ -668,6 +669,7 @@ function render(m: any) {
     ${bonus}
     ${reactions}
     ${legendary}
+    <div id="rt-mount" style="position:relative; min-height:60px"></div>
   `;
   // Re-bind the drag listener — innerHTML reassignment GC's the
   // previous handle node along with its event handlers.
@@ -677,9 +679,20 @@ function render(m: any) {
     currentMonsterDragUnbind = bindPanelDrag(handle, PANEL_IDS.bestiaryInfo);
   }
   bindStatRowInputs();
-  // Re-apply role gating after each render — fresh DOM nodes need
-  // their readOnly / display state set.
   applyRoleGating();
+  mountRtPanel();
+}
+
+let rtMountHandle: { refresh: () => Promise<void>; unmount: () => void } | null = null;
+function mountRtPanel(): void {
+  const container = root.querySelector<HTMLElement>("#rt-mount");
+  if (!container) return;
+  rtMountHandle?.unmount();
+  rtMountHandle = mountResourcePanel({
+    container,
+    getItemId: () => currentItemId,
+  });
+  void rtMountHandle.refresh();
 }
 
 let currentMonsterDragUnbind: (() => void) | null = null;

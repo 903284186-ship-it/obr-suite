@@ -30,7 +30,8 @@ export type ModuleId =
   | "hpBar"
   | "metadataInspector"
   | "vision"
-  | "chat";
+  | "chat"
+  | "resourceTracker";
 
 export type DataVersion = "2014" | "2024" | "all";
 export type Language = "zh" | "en";
@@ -153,6 +154,7 @@ export const DEFAULT_STATE: SuiteState = {
     // visually with OBR's own fog drawings if both are in use.
     vision: false,
     chat: true,
+    resourceTracker: true,
   },
   dataVersion: "2024",
   allowPlayerMonsters: false,

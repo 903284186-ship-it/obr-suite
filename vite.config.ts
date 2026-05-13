@@ -101,6 +101,7 @@ export default defineConfig(({ command }) => ({
         "vision-light-edit": resolve(__dirname, "vision-light-edit.html"),
         "vision-collision-edit": resolve(__dirname, "vision-collision-edit.html"),
         "hp-bar": resolve(__dirname, "hp-bar.html"),
+        "resource-edit": resolve(__dirname, "resource-edit.html"),
       },
     },
   },

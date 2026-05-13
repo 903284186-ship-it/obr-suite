@@ -2345,6 +2345,17 @@ const TABS: TabDef[] = [
       root.appendChild(row);
     },
   },
+  {
+    id: "resourceTracker",
+    zh: `⚙ 资源追踪`,
+    en: `⚙ Resource Tracker`,
+    moduleId: "resourceTracker",
+    body: {
+      zh: `<p>在每个 token 上追踪可消耗资源（法术槽、充能、弹药等）。支持三种显示模式：<b>个数</b>（多个可点击图标）、<b>进度条</b>、<b>数字</b>。</p>`,
+      en: `<p>Track consumable resources per token (spell slots, charges, ammo, etc.). Three display modes: <b>count</b> (clickable icons), <b>bar</b> (progress bar), <b>number</b> (text readout).</p>
+<p>Click icons to consume/restore, right-click to refill. Auto-displays in character card, monster info, and HP bar panels.</p>`,
+    },
+  },
 ];
 
 // Stable channel hides: drop tabs whose backing module is hidden
@@ -2380,6 +2391,7 @@ function moduleLabelKey(id: ModuleId): string {
     case "bubbles": return lang === "zh" ? "血量气泡" : "HP Bubbles";
     case "statusTracker": return lang === "zh" ? "状态追踪" : "Status Tracker";
     case "chat": return lang === "zh" ? "聊天" : "Chat";
+    case "resourceTracker": return lang === "zh" ? "资源追踪" : "Resource Tracker";
     default: return id;
   }
 }
